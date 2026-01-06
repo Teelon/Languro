@@ -25,7 +25,7 @@ import { generateConjugations } from './llm';
 async function test() {
     console.log('Testing generateConjugations for "eat"...');
     try {
-        const result = await generateConjugations('eat', 'en');
+        const result = await generateConjugations('eat', { language: 'en', infinitive: 'eat' });
         // Check Present Continuous
         const presentCont = result.tenses.find(t => t.tense_name === 'Present Continuous');
         if (presentCont) {
