@@ -305,7 +305,7 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                     className={currentTab === index ? 'block' : 'hidden'}
                     role="tabpanel"
                 >
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {group.tenses.map((tense) => (
                             <div
                                 key={tense.tense_name}
