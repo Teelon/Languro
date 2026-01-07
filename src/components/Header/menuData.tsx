@@ -9,8 +9,8 @@ const menuData: Menu[] = [
   },
   {
     id: 2,
-    title: "Conjugator",
-    path: "/conjugator",
+    title: "Conjugation",
+    path: "/conjugation",
     newTab: false,
   },
   {

@@ -13,6 +13,9 @@ export const Sidebar = () => {
           <Link href="/dashboard" className="block py-2 px-4 text-base font-medium text-body-color hover:text-primary rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
             Overview
           </Link>
+          <Link href="/conjugation" className="block py-2 px-4 text-base font-medium text-body-color hover:text-primary rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+            Conjugation
+          </Link>
           <Link href="/settings" className="block py-2 px-4 text-base font-medium text-body-color hover:text-primary rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
             Settings
           </Link>
