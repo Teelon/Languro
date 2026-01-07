@@ -1,12 +1,12 @@
 const HowItWorks = () => {
   return (
-    <section className="bg-slate-900 pb-16 pt-16 md:pb-20 md:pt-20 lg:pb-28 lg:pt-28">
+    <section className="bg-slate-50 pb-16 pt-16 dark:bg-slate-900 md:pb-20 md:pt-20 lg:pb-28 lg:pt-28">
       <div className="container">
         <div className="mb-16 text-center">
-          <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl md:text-[40px]">
+          <h2 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl md:text-[40px]">
             How It Works
           </h2>
-          <p className="text-base text-slate-400">
+          <p className="text-base text-slate-600 dark:text-slate-400">
             A systematic approach to proficiency.
           </p>
         </div>
@@ -46,15 +46,15 @@ const HowItWorks = () => {
               )
             }
           ].map((feature, i) => (
-            <div key={i} className="group relative overflow-hidden rounded-sm bg-slate-800 px-6 py-8 shadow-sm duration-300 hover:shadow-lg hover:bg-slate-700">
-              <div className="mb-6 flex h-[60px] w-[60px] items-center justify-center rounded-md bg-blue-600 bg-opacity-10 text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-all">
+            <div key={i} className="group relative overflow-hidden rounded-sm bg-white px-6 py-8 shadow-sm duration-300 hover:shadow-lg dark:bg-slate-800 dark:hover:bg-slate-700">
+              <div className="mb-6 flex h-[60px] w-[60px] items-center justify-center rounded-md bg-blue-600 bg-opacity-10 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white dark:text-blue-500">
                 {feature.icon}
               </div>
-              <div className="mb-2 text-xl font-bold text-blue-400">{feature.step}</div>
-              <h3 className="mb-3 text-xl font-bold text-white">
+              <div className="mb-2 text-xl font-bold text-blue-600 dark:text-blue-400">{feature.step}</div>
+              <h3 className="mb-3 text-xl font-bold text-slate-900 dark:text-white">
                 {feature.title}
               </h3>
-              <p className="text-base font-medium leading-relaxed text-slate-400">
+              <p className="text-base font-medium leading-relaxed text-slate-600 dark:text-slate-400">
                 {feature.desc}
               </p>
             </div>

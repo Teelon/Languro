@@ -2,15 +2,15 @@ import Link from "next/link";
 
 const Hero = () => {
   return (
-    <section className="relative z-10 overflow-hidden bg-slate-900 pb-16 pt-[120px] md:pb-[120px] md:pt-[150px] xl:pb-[160px] xl:pt-[180px] 2xl:pb-[200px] 2xl:pt-[210px]">
+    <section className="relative z-10 overflow-hidden bg-white pb-16 pt-[120px] dark:bg-slate-900 md:pb-[120px] md:pt-[150px] xl:pb-[160px] xl:pt-[180px] 2xl:pb-[200px] 2xl:pt-[210px]">
       <div className="container">
         <div className="-mx-4 flex flex-wrap">
           <div className="w-full px-4">
             <div className="mx-auto max-w-[800px] text-center">
-              <h1 className="mb-5 text-3xl font-bold leading-tight text-white sm:text-4xl sm:leading-tight md:text-5xl md:leading-tight">
+              <h1 className="mb-5 text-3xl font-bold leading-tight text-slate-900 dark:text-white sm:text-4xl sm:leading-tight md:text-5xl md:leading-tight">
                 The Architecture of Rigor.
               </h1>
-              <p className="mb-12 text-base !leading-relaxed text-slate-400 sm:text-lg md:text-xl">
+              <p className="mb-12 text-base !leading-relaxed text-slate-600 dark:text-slate-400 sm:text-lg md:text-xl">
                 Stop playing games. Start building proficiency. <br />
                 The ultimate tool for the dedicated autodidact.
               </p>
@@ -23,7 +23,7 @@ const Hero = () => {
                 </Link>
                 <Link
                   href="#methodology"
-                  className="inline-block rounded-sm bg-slate-800 px-8 py-4 text-base font-semibold text-white duration-300 ease-in-out hover:bg-slate-700/80"
+                  className="inline-block rounded-sm bg-slate-100 px-8 py-4 text-base font-semibold text-slate-900 duration-300 ease-in-out hover:bg-slate-200/80 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700/80"
                 >
                   See How It Works
                 </Link>

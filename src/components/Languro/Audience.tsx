@@ -1,12 +1,12 @@
 const Audience = () => {
   return (
-    <section className="bg-slate-800 pb-16 pt-16 md:pb-20 md:pt-20 lg:pb-28 lg:pt-28">
+    <section className="bg-white pb-16 pt-16 dark:bg-slate-800 md:pb-20 md:pt-20 lg:pb-28 lg:pt-28">
       <div className="container">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
 
           {/* For Who */}
           <div>
-            <h3 className="mb-6 text-2xl font-bold text-white">
+            <h3 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
               Built For
             </h3>
             <ul className="space-y-4">
@@ -17,8 +17,8 @@ const Audience = () => {
                 "Professionals working in another language",
                 "Language nerds who love structure"
               ].map((item, i) => (
-                <li key={i} className="flex items-center text-slate-300">
-                  <span className="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-500">
+                <li key={i} className="flex items-center text-slate-700 dark:text-slate-300">
+                  <span className="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-600 dark:text-green-500">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
@@ -31,7 +31,7 @@ const Audience = () => {
 
           {/* Not For Who */}
           <div>
-            <h3 className="mb-6 text-2xl font-bold text-white">
+            <h3 className="mb-6 text-2xl font-bold text-slate-900 dark:text-white">
               Not For
             </h3>
             <ul className="space-y-4">
@@ -41,7 +41,7 @@ const Audience = () => {
                 "Users allergic to grammar",
                 "Anyone chasing streaks over skill"
               ].map((item, i) => (
-                <li key={i} className="flex items-center text-slate-400">
+                <li key={i} className="flex items-center text-slate-500 dark:text-slate-400">
                   <span className="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-red-500/10 text-red-500">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
