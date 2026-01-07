@@ -24,7 +24,7 @@ const PricingBox = ({ product }: { product: Price }) => {
   return (
     <div className="w-full px-4 md:w-1/2 lg:w-1/3">
       <div
-        className="relative z-10 mb-10 overflow-hidden rounded-xl bg-white px-8 py-10 shadow-[0px_0px_40px_0px_rgba(0,0,0,0.08)] dark:bg-dark-2 sm:p-12 lg:px-6 lg:py-10 xl:p-14"
+        className="relative z-10 mb-10 overflow-hidden rounded-xl bg-white px-8 py-10 shadow-[0px_0px_40px_0px_rgba(0,0,0,0.08)] dark:bg-slate-800 sm:p-12 lg:px-6 lg:py-10 xl:p-14"
         data-wow-delay=".1s"
       >
         {product.nickname === "Premium" && (
@@ -32,24 +32,24 @@ const PricingBox = ({ product }: { product: Price }) => {
             Recommended
           </p>
         )}
-        <span className="mb-5 block text-xl font-medium text-dark dark:text-white">
+        <span className="mb-5 block text-xl font-medium text-slate-900 dark:text-white">
           {product.nickname}
         </span>
-        <h2 className="mb-11 text-4xl font-semibold text-dark dark:text-white xl:text-[42px] xl:leading-[1.21]">
+        <h2 className="mb-11 text-4xl font-semibold text-slate-900 dark:text-white xl:text-[42px] xl:leading-[1.21]">
           <span className="text-xl font-medium">$ </span>
           <span className="-ml-1 -tracking-[2px]">
             {(product.unit_amount / 100).toLocaleString("en-US", {
               currency: "USD",
             })}
           </span>
-          <span className="text-base font-normal text-body-color dark:text-dark-6">
+          <span className="text-base font-normal text-slate-600 dark:text-slate-400">
             {" "}
             Per Month
           </span>
         </h2>
 
         <div className="mb-[50px]">
-          <h3 className="mb-5 text-lg font-medium text-dark dark:text-white">
+          <h3 className="mb-5 text-lg font-medium text-slate-900 dark:text-white">
             Features
           </h3>
           <div className="mb-10">

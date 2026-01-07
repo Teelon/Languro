@@ -14,9 +14,8 @@ const SectionTitle = ({
   return (
     <div className="-mx-4 flex flex-wrap">
       <div
-        className={`wow fadeInUp w-full px-4 ${
-          center ? "mx-auto text-center" : ""
-        }`}
+        className={`wow fadeInUp w-full px-4 ${center ? "mx-auto text-center" : ""
+          }`}
         data-wow-delay=".1s"
         style={{ maxWidth: width }}
       >
@@ -25,10 +24,10 @@ const SectionTitle = ({
             {subtitle}
           </span>
         )}
-        <h2 className="mb-4 text-3xl font-bold text-dark dark:text-white sm:text-4xl md:text-[40px] md:leading-[1.2]">
+        <h2 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl md:text-[40px] md:leading-[1.2]">
           {title}
         </h2>
-        <p className="text-base leading-relaxed text-body-color dark:text-dark-6 sm:leading-relaxed">
+        <p className="text-base leading-relaxed text-slate-600 dark:text-slate-400 sm:leading-relaxed">
           {paragraph}
         </p>
       </div>

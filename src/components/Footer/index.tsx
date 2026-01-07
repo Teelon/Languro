@@ -292,14 +292,14 @@ const Footer = () => {
               <div className="my-1 flex justify-center md:justify-end">
                 <p className="text-base text-gray-7">
                   Designed and Developed by{" "}
-                  <Link
-                    href="https://tailgrids.com"
+                  <a
+                    href="https://languro.com"
                     rel="nofollow noopner noreferrer"
                     target="_blank"
                     className="text-gray-1 hover:underline"
                   >
-                    TailGrids and Next.js Templates
-                  </Link>
+                    Languro
+                  </a>
                 </p>
               </div>
             </div>

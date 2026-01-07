@@ -109,14 +109,14 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
                     <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value as any)}
-                        className="w-full appearance-none rounded-md border border-gray-300 bg-white px-4 py-3 pr-8 text-base text-body-color transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-600 dark:bg-dark-2 dark:text-white"
+                        className="w-full appearance-none rounded-md border border-gray-300 bg-white px-4 py-3 pr-8 text-base text-slate-600 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                         aria-label="Language selection"
                     >
                         <option value="en">English</option>
                         <option value="fr">French</option>
                         <option value="es">Spanish</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-body-color dark:text-gray-400">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-600 dark:text-gray-400">
                         <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
                             <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
                         </svg>
@@ -130,7 +130,7 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
                         onChange={(e) => setVerb(e.target.value)}
                         placeholder="e.g. comer, manger, run"
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-base text-body-color placeholder-body-color/60 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-600 dark:bg-dark-2 dark:text-white"
+                        className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-base text-slate-600 placeholder-slate-500/60 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-600 dark:bg-slate-800 dark:text-white"
                     />
                 </div>
 

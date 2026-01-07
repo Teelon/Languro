@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 import menuData from "./menuData";
 
@@ -47,7 +48,7 @@ const Header = () => {
     <>
       <header
         className={`ud-header left-0 top-0 z-40 flex w-full items-center ${sticky
-          ? "shadow-nav fixed z-[999] border-b border-stroke bg-white/80 backdrop-blur-[5px] dark:border-dark-3/20 dark:bg-dark/10"
+          ? "shadow-md fixed z-[999] border-b border-slate-200 bg-white/80 backdrop-blur-[5px] dark:border-slate-700/20 dark:bg-slate-900/10"
           : "absolute bg-transparent"
           }`}
       >
@@ -56,8 +57,7 @@ const Header = () => {
             <div className="w-60 max-w-full px-4">
               <Link
                 href="/"
-                className={`navbar-logo block w-full ${sticky ? "py-2" : "py-5"
-                  } `}
+                className={`navbar-logo block w-full ${sticky ? "py-2" : "py-5"}`}
               >
                 {pathUrl !== "/" ? (
                   <>
@@ -106,29 +106,29 @@ const Header = () => {
                 >
                   <span
                     className={`relative my-1.5 block h-0.5 w-[30px] transition-all duration-300 ${navbarOpen ? " top-[7px] rotate-45" : " "
-                      } ${pathUrl !== "/" && "!bg-dark dark:!bg-white"} ${pathUrl === "/" && sticky
-                        ? "bg-dark dark:bg-white"
-                        : "bg-dark dark:bg-white"
+                      } ${pathUrl !== "/" && "!bg-slate-900 dark:!bg-white"} ${pathUrl === "/" && sticky
+                        ? "bg-slate-900 dark:bg-white"
+                        : "bg-slate-900 dark:bg-white"
                       }`}
                   />
                   <span
                     className={`relative my-1.5 block h-0.5 w-[30px] transition-all duration-300 ${navbarOpen ? "opacity-0 " : " "
-                      } ${pathUrl !== "/" && "!bg-dark dark:!bg-white"} ${pathUrl === "/" && sticky
-                        ? "bg-dark dark:bg-white"
-                        : "bg-dark dark:bg-white"
+                      } ${pathUrl !== "/" && "!bg-slate-900 dark:!bg-white"} ${pathUrl === "/" && sticky
+                        ? "bg-slate-900 dark:bg-white"
+                        : "bg-slate-900 dark:bg-white"
                       }`}
                   />
                   <span
                     className={`relative my-1.5 block h-0.5 w-[30px] transition-all duration-300 ${navbarOpen ? " top-[-8px] -rotate-45" : " "
-                      } ${pathUrl !== "/" && "!bg-dark dark:!bg-white"} ${pathUrl === "/" && sticky
-                        ? "bg-dark dark:bg-white"
-                        : "bg-dark dark:bg-white"
+                      } ${pathUrl !== "/" && "!bg-slate-900 dark:!bg-white"} ${pathUrl === "/" && sticky
+                        ? "bg-slate-900 dark:bg-white"
+                        : "bg-slate-900 dark:bg-white"
                       }`}
                   />
                 </button>
                 <nav
                   id="navbarCollapse"
-                  className={`navbar absolute right-0 z-30 w-[250px] rounded border-[.5px] border-body-color/50 bg-white px-6 py-4 duration-300 dark:border-body-color/20 dark:bg-dark-2 lg:visible lg:static lg:w-auto lg:border-none lg:!bg-transparent lg:p-0 lg:opacity-100 lg:dark:bg-transparent ${navbarOpen
+                  className={`navbar absolute right-0 z-30 w-[250px] rounded border-[.5px] border-slate-200/50 bg-white px-6 py-4 duration-300 dark:border-slate-600/20 dark:bg-slate-800 lg:visible lg:static lg:w-auto lg:border-none lg:!bg-transparent lg:p-0 lg:opacity-100 lg:dark:bg-transparent ${navbarOpen
                     ? "visibility top-full opacity-100"
                     : "invisible top-[120%] opacity-0"
                     }`}
@@ -142,7 +142,7 @@ const Header = () => {
                               onClick={navbarToggleHandler}
                               scroll={false}
                               href={menuItem.path}
-                              className={`ud-menu-scroll flex py-2 text-base text-dark group-hover:text-primary dark:text-white dark:group-hover:text-primary lg:inline-flex lg:px-0 lg:py-6 ${pathUrl === menuItem?.path && "text-primary"
+                              className={`ud-menu-scroll flex py-2 text-base text-slate-900 group-hover:text-primary dark:text-white dark:group-hover:text-primary lg:inline-flex lg:px-0 lg:py-6 ${pathUrl === menuItem?.path && "text-primary"
                                 }`}
                             >
                               {menuItem.title}
@@ -152,8 +152,8 @@ const Header = () => {
                               scroll={false}
                               href={menuItem.path}
                               className={`ud-menu-scroll flex py-2 text-base lg:inline-flex lg:px-0 lg:py-6 ${sticky
-                                ? "text-dark group-hover:text-primary dark:text-white dark:group-hover:text-primary"
-                                : "text-dark dark:text-white"
+                                ? "text-slate-900 group-hover:text-primary dark:text-white dark:group-hover:text-primary"
+                                : "text-slate-900 dark:text-white"
                                 } ${pathUrl === menuItem?.path &&
                                 sticky &&
                                 "!text-primary"
@@ -168,7 +168,7 @@ const Header = () => {
                           {pathUrl !== "/" ? (
                             <button
                               onClick={() => handleSubmenu(index)}
-                              className={`ud-menu-scroll flex items-center justify-between py-2 text-base text-dark group-hover:text-primary dark:text-white dark:group-hover:text-primary lg:inline-flex lg:px-0 lg:py-6`}
+                              className={`ud-menu-scroll flex items-center justify-between py-2 text-base text-slate-900 group-hover:text-primary dark:text-white dark:group-hover:text-primary lg:inline-flex lg:px-0 lg:py-6`}
                             >
                               {menuItem.title}
 
@@ -192,8 +192,8 @@ const Header = () => {
                             <button
                               onClick={() => handleSubmenu(index)}
                               className={`ud-menu-scroll flex items-center justify-between py-2 text-base lg:inline-flex lg:px-0 lg:py-6 ${sticky
-                                ? "text-dark group-hover:text-primary dark:text-white dark:group-hover:text-primary"
-                                : "text-dark dark:text-white"
+                                ? "text-slate-900 group-hover:text-primary dark:text-white dark:group-hover:text-primary"
+                                : "text-slate-900 dark:text-white"
                                 }`}
                             >
                               {menuItem.title}
@@ -217,7 +217,7 @@ const Header = () => {
                           )}
 
                           <div
-                            className={`submenu relative left-0 top-full w-[250px] rounded-sm bg-white p-4 transition-[top] duration-300 group-hover:opacity-100 dark:bg-dark-2 lg:invisible lg:absolute lg:top-[110%] lg:block lg:opacity-0 lg:shadow-lg lg:group-hover:visible lg:group-hover:top-full ${openIndex === index ? "!-left-[25px]" : "hidden"
+                            className={`submenu relative left-0 top-full w-[250px] rounded-sm bg-white p-4 transition-[top] duration-300 group-hover:opacity-100 dark:bg-slate-800 lg:invisible lg:absolute lg:top-[110%] lg:block lg:opacity-0 lg:shadow-lg lg:group-hover:visible lg:group-hover:top-full ${openIndex === index ? "!-left-[25px]" : "hidden"
                               }`}
                           >
                             {menuItem?.submenu?.map((submenuItem: any, i) => (
@@ -226,7 +226,7 @@ const Header = () => {
                                 key={i}
                                 className={`block rounded px-4 py-[10px] text-sm ${pathUrl === submenuItem.path
                                   ? "text-primary"
-                                  : "text-body-color hover:text-primary dark:text-dark-6 dark:hover:text-primary"
+                                  : "text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-primary"
                                   }`}
                               >
                                 {submenuItem.title}
@@ -234,17 +234,17 @@ const Header = () => {
                             ))}
                           </div>
                         </li>
-                      ),
+                      )
                     )}
                   </ul>
                 </nav>
               </div>
-              <div className="hidden items-center justify-end pr-16 sm:flex lg:pr-0">
+              <div className="hidden items-center justify-end pr-16 sm:flex lg:pr-0 gap-2">
                 {/* theme toggler */}
                 <button
                   aria-label="theme toggler"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="flex h-8 w-8 items-center justify-center text-body-color duration-300 dark:text-white cursor-pointer"
+                  className="flex h-8 w-8 items-center justify-center text-slate-600 duration-300 dark:text-white cursor-pointer mr-2"
                 >
                   <span>
                     <svg
@@ -256,7 +256,7 @@ const Header = () => {
 
                     <svg
                       viewBox="0 0 23 23"
-                      className={`h-[30px] w-[30px] fill-current text-dark dark:hidden`}
+                      className={`h-[30px] w-[30px] fill-current text-slate-900 dark:hidden`}
                     >
                       <g clipPath="url(#clip0_40_125)">
                         <path d="M16.6111 15.855C17.591 15.1394 18.3151 14.1979 18.7723 13.1623C16.4824 13.4065 14.1342 12.4631 12.6795 10.4711C11.2248 8.47905 11.0409 5.95516 11.9705 3.84818C10.8449 3.9685 9.72768 4.37162 8.74781 5.08719C5.7759 7.25747 5.12529 11.4308 7.29558 14.4028C9.46586 17.3747 13.6392 18.0253 16.6111 15.855Z" />
@@ -268,62 +268,33 @@ const Header = () => {
                 {session?.user ? (
                   <>
                     <p
-                      className={`loginBtn px-7 py-3 text-base font-medium text-dark dark:text-white`}
+                      className={`loginBtn px-7 py-3 text-base font-medium text-slate-900 dark:text-white`}
                     >
                       {session?.user?.name}
                     </p>
-                    {pathUrl !== "/" || sticky ? (
-                      <button
-                        onClick={() => signOut()}
-                        className="signUpBtn rounded-lg bg-primary/100 px-6 py-3 text-base font-medium text-white duration-300 ease-in-out hover:bg-opacity-20 hover:text-dark"
-                      >
-                        Sign Out
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => signOut()}
-                        className="signUpBtn rounded-lg bg-primary px-6 py-3 text-base font-medium text-white duration-300 ease-in-out hover:bg-primary/90 dark:bg-white/20 dark:hover:bg-opacity-100 dark:hover:text-dark"
-                      >
-                        Sign Out
-                      </button>
-                    )}
+                    <Button
+                      onClick={() => signOut()}
+                      variant="ghost"
+                      className="text-base font-medium hover:opacity-70"
+                    >
+                      Sign Out
+                    </Button>
                   </>
                 ) : (
                   <>
-                    {pathUrl !== "/" ? (
-                      <>
-                        <Link
-                          href="/signin"
-                          className="px-7 py-3 text-base font-medium text-dark hover:opacity-70 dark:text-white"
-                        >
-                          Sign In
-                        </Link>
-                        <Link
-                          href="/signup"
-                          className="rounded-lg bg-primary px-6 py-3 text-base font-medium text-white duration-300 ease-in-out hover:bg-primary/90 dark:bg-white/10 dark:hover:bg-white/20"
-                        >
-                          Sign Up
-                        </Link>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          href="/signin"
-                          className={`px-7 py-3 text-base font-medium hover:opacity-70 text-dark dark:text-white`}
-                        >
-                          Sign In
-                        </Link>
-                        <Link
-                          href="/signup"
-                          className={`rounded-lg px-6 py-3 text-base font-medium text-white duration-300 ease-in-out ${sticky
-                            ? "bg-primary hover:bg-primary/90 dark:bg-white/10 dark:hover:bg-white/20"
-                            : "bg-primary hover:bg-primary/90 dark:bg-white/10 dark:hover:bg-white/20"
-                            }`}
-                        >
-                          Sign Up
-                        </Link>
-                      </>
-                    )}
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="text-base font-medium hover:opacity-70"
+                    >
+                      <Link href="/signin">Sign In</Link>
+                    </Button>
+                    <Button
+                      asChild
+                      className="text-white"
+                    >
+                      <Link href="/signup">Sign Up</Link>
+                    </Button>
                   </>
                 )}
               </div>

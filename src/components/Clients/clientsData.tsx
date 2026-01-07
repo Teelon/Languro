@@ -28,11 +28,5 @@ export const clientsData: Client[] = [
     logoWhite: "/images/brands/ayroui-white.svg",
     link: "https://ayroui.com/",
   },
-  {
-    id: 5,
-    title: "TailGrids",
-    logo: "/images/brands/tailgrids.svg",
-    logoWhite: "/images/brands/tailgrids-white.svg",
-    link: "https://tailgrids.com/",
-  },
+
 ];
