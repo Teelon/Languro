@@ -27,6 +27,7 @@ const Signin = () => {
 
     setLoading(true);
     signIn("credentials", { ...loginData, redirect: false })
+
       .then((callback) => {
         if (callback?.error) {
           toast.error(callback?.error);
@@ -38,7 +39,7 @@ const Signin = () => {
         if (callback?.ok && !callback?.error) {
           toast.success("Login successful");
           setLoading(false);
-          router.push("/");
+          router.push("/dashboard");
         }
       })
       .catch((err) => {
