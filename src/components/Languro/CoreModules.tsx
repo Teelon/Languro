@@ -1,6 +1,14 @@
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
 const CoreModules = () => {
   return (
-    <section className="bg-slate-50 pb-16 pt-16 dark:bg-slate-900 md:pb-20 md:pt-20 lg:pb-28 lg:pt-28">
+    <section className="bg-slate-50 py-16 dark:bg-slate-900 md:py-20 lg:py-24">
       <div className="container">
         <div className="mb-16">
           <h2 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl md:text-[40px]">
@@ -20,10 +28,18 @@ const CoreModules = () => {
               <p className="text-slate-600 dark:text-slate-400">Master morphology and syntax through deliberate practice. No multiple choice, just pure active recall.</p>
             </div>
             <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:w-2/3">
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Hyperlinked grammar codex</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Adaptive conjugation drills</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Contrastive tense training</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Error-type tracking</div>
+              {[
+                "Hyperlinked grammar codex",
+                "Adaptive conjugation drills",
+                "Contrastive tense training",
+                "Error-type tracking"
+              ].map((item, i) => (
+                <Card key={i} className="transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
+                  <CardContent className="p-4 pt-4">
+                    <p className="text-slate-700 dark:text-slate-300 font-medium">{item}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
 
@@ -35,10 +51,18 @@ const CoreModules = () => {
               <p className="text-slate-600 dark:text-slate-400">Build fluency through real reading and listening. Stop reading children's books.</p>
             </div>
             <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:w-2/3">
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Graded readers A1–C2</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Adult-topic bridge content</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">One-click sentence mining</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Audio-sync highlighting</div>
+              {[
+                "Graded readers A1–C2",
+                "Adult-topic bridge content",
+                "One-click sentence mining",
+                "Audio-sync highlighting"
+              ].map((item, i) => (
+                <Card key={i} className="transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
+                  <CardContent className="p-4 pt-4">
+                    <p className="text-slate-700 dark:text-slate-300 font-medium">{item}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
 
@@ -50,10 +74,18 @@ const CoreModules = () => {
               <p className="text-slate-600 dark:text-slate-400">Turn knowledge into ability. Write, speak, and get critiqued by an AI that understands grammar.</p>
             </div>
             <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:w-2/3">
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Daily writing prompts</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">AI correction with explanation</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Grammar-linked drills from mistakes</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Voice roleplay scenarios</div>
+              {[
+                "Daily writing prompts",
+                "AI correction with explanation",
+                "Grammar-linked drills from mistakes",
+                "Voice roleplay scenarios"
+              ].map((item, i) => (
+                <Card key={i} className="transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
+                  <CardContent className="p-4 pt-4">
+                    <p className="text-slate-700 dark:text-slate-300 font-medium">{item}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
 
@@ -65,10 +97,18 @@ const CoreModules = () => {
               <p className="text-slate-600 dark:text-slate-400">See what you actually know. Data-driven insights to optimize your study routine.</p>
             </div>
             <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:w-2/3">
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Grammar heatmap</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Known words estimate</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Immersion hours tracking</div>
-              <div className="rounded border border-slate-200 bg-white p-4 text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">Weakness-driven study plan</div>
+              {[
+                "Grammar heatmap",
+                "Known words estimate",
+                "Immersion hours tracking",
+                "Weakness-driven study plan"
+              ].map((item, i) => (
+                <Card key={i} className="transition-all hover:shadow-md dark:bg-slate-800 dark:border-slate-700">
+                  <CardContent className="p-4 pt-4">
+                    <p className="text-slate-700 dark:text-slate-300 font-medium">{item}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
 

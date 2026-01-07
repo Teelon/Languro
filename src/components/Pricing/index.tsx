@@ -7,7 +7,7 @@ const Pricing = () => {
   return (
     <section
       id="pricing"
-      className="relative z-20 overflow-hidden bg-white pb-12 pt-20 dark:bg-slate-900 lg:pb-[90px] lg:pt-[120px]"
+      className="relative z-20 overflow-hidden bg-white pb-12 pt-20 dark:bg-slate-900 lg:pb-[90px] lg:pt-28"
     >
       <div className="container">
         <div className="mb-[60px]">
