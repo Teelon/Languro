@@ -4,6 +4,7 @@ import { FullConjugationData } from '../types';
 import toast from 'react-hot-toast';
 import FeedbackModal from './FeedbackModal';
 import { useSession } from 'next-auth/react';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 // Simple Icon Components
 const IconVolume2 = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
@@ -307,22 +308,24 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                 >
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {group.tenses.map((tense) => (
-                            <div
+                            <Card
                                 key={tense.tense_name}
-                                className="group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md dark:border-slate-700 dark:bg-dark-2 dark:hover:border-primary"
+                                className="group flex h-full flex-col transition hover:border-primary hover:shadow-md dark:hover:border-primary"
                             >
-                                <h3 className="mb-4 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                    {tense.tense_name}
-                                </h3>
+                                <CardHeader className="pb-3">
+                                    <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                        {tense.tense_name}
+                                    </CardTitle>
+                                </CardHeader>
 
-                                <div className="space-y-2">
+                                <CardContent className="space-y-2">
                                     {tense.items.map((item, idx) => {
                                         const isVoted = !!(item.conjugation_id && votedIds.has(item.conjugation_id));
 
                                         return (
                                             <div
                                                 key={idx}
-                                                className="group/item relative flex items-center justify-between rounded-md p-1 pl-2 hover:bg-gray-50 dark:hover:bg-slate-700/50"
+                                                className="group/item relative flex items-center justify-between rounded-md p-2 hover:bg-muted/50"
                                             >
                                                 <div className="flex w-full items-center gap-2 pr-12">
                                                     {/* Audio Button */}
@@ -333,8 +336,8 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                                                         className={`
                                                             flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform
                                                             ${item.has_audio
-                                                                ? 'bg-primary text-white hover:scale-110'
-                                                                : 'cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-slate-700'
+                                                                ? 'bg-primary text-primary-foreground hover:scale-110'
+                                                                : 'cursor-not-allowed bg-muted text-muted-foreground'
                                                             }
                                                         `}
                                                     >
@@ -346,10 +349,10 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                                                     </button>
 
                                                     <div className="leading-tight">
-                                                        <span className="mr-2 inline-block text-sm font-medium text-gray-500 dark:text-gray-400">
+                                                        <span className="mr-2 inline-block text-sm font-medium text-muted-foreground">
                                                             {item.pronoun}
                                                         </span>
-                                                        <span className="text-base font-bold text-dark dark:text-white">
+                                                        <span className="text-base font-bold text-foreground">
                                                             {item.root ? (
                                                                 <>
                                                                     {item.auxiliary && (
@@ -388,8 +391,8 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                                             </div>
                                         );
                                     })}
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
                         ))}
                     </div>
                 </div>

@@ -3,15 +3,14 @@ import Contact from "@/components/Contact";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title:
-    "Contact Page | Play SaaS Starter Kit and Boilerplate for Next.js",
-  description: "This is contact page description",
+  title: "Contact & Support | Languro",
+  description: "Get in touch with the Languro command center for support or enterprise inquiries.",
 };
 
 const ContactPage = () => {
   return (
     <>
-      <Breadcrumb pageName="Contact Page" />
+      <Breadcrumb pageName="Contact Support" />
 
       <Contact />
     </>

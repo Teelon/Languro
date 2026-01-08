@@ -59,41 +59,14 @@ const Header = () => {
                 href="/"
                 className={`navbar-logo block w-full ${sticky ? "py-2" : "py-5"}`}
               >
-                {pathUrl !== "/" ? (
-                  <>
-                    <Image
-                      src={`/images/logo/logo.svg`}
-                      alt="logo"
-                      width={240}
-                      height={30}
-                      className="header-logo w-full dark:hidden"
-                    />
-                    <Image
-                      src={`/images/logo/logo-white.svg`}
-                      alt="logo"
-                      width={240}
-                      height={30}
-                      className="header-logo hidden w-full dark:block"
-                    />
-                  </>
-                ) : (
-                  <>
-                    <Image
-                      src="/images/logo/logo.svg"
-                      alt="logo"
-                      width={140}
-                      height={30}
-                      className="header-logo w-full dark:hidden"
-                    />
-                    <Image
-                      src={"/images/logo/logo-white.svg"}
-                      alt="logo"
-                      width={140}
-                      height={30}
-                      className="header-logo hidden w-full dark:block"
-                    />
-                  </>
-                )}
+                <div className={`flex items-center gap-2 ${sticky ? "py-2" : "py-5"}`}>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20">
+                    <span className="text-xl font-bold text-white leading-none mt-0.5">L</span>
+                  </div>
+                  <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                    LAN<span className="text-primary">GURO</span>
+                  </span>
+                </div>
               </Link>
             </div>
             <div className="flex w-full items-center justify-between px-4">

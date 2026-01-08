@@ -36,46 +36,48 @@ const PricingBox = ({ product }: { product: Price }) => {
         className="relative z-10 mb-10 overflow-hidden shadow-lg transition-all hover:scale-105 hover:shadow-xl dark:bg-slate-800"
         data-wow-delay=".1s"
       >
-        {product.nickname === "Premium" && (
-          <div className="absolute right-0 top-0 h-16 w-16">
-            <div className="absolute right-[-34px] top-[32px] w-[170px] rotate-45 transform bg-primary py-1 text-center text-sm font-semibold text-white shadow-sm">
+        {product.nickname === "Commander" && (
+          <div className="absolute top-0 right-0">
+            <span className="inline-block bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white rounded-bl-lg">
               Recommended
-            </div>
+            </span>
           </div>
         )}
 
-        <CardHeader className="pt-8 text-center">
-          {product.nickname === "Premium" && (
-            <Badge variant="secondary" className="mx-auto mb-4 w-fit">Popular</Badge>
+        <CardHeader className="pt-8 text-center pb-2">
+          {product.nickname === "Commander" && (
+            <Badge variant="default" className="mx-auto mb-4 w-fit bg-primary/10 text-primary border-primary/20">Popular</Badge>
           )}
-          <CardTitle className="text-xl font-medium text-slate-900 dark:text-white">
+          <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">
             {product.nickname}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="text-center">
+        <CardContent className="text-center pt-4">
           <div className="mb-8">
-            <span className="text-4xl font-bold text-slate-900 dark:text-white">
-              ${(product.unit_amount / 100).toLocaleString("en-US", { currency: "USD" })}
+            <span className="text-5xl font-extrabold text-slate-900 dark:text-white">
+              ${(product.unit_amount / 100).toLocaleString("en-US", { currency: "USD", minimumFractionDigits: 0 })}
             </span>
-            <span className="text-base text-slate-600 dark:text-slate-400"> / month</span>
+            <span className="text-lg text-slate-500 dark:text-slate-400 font-medium">/mo</span>
           </div>
 
-          <div className="mb-8 flex flex-col gap-3 text-left">
+          <div className="mb-8 flex flex-col gap-4 text-left px-2">
             {product?.offers.map((offer, i) => (
               <OfferList key={i} text={offer} />
             ))}
           </div>
         </CardContent>
 
-        <CardFooter>
+        <CardFooter className="pb-8">
           <Button
             onClick={handleSubscription}
-            className="w-full"
-            variant={product.nickname === "Premium" ? "default" : "outline"}
+            className={`w-full text-base font-bold py-6 transition-all duration-300 ${product.nickname === "Commander"
+                ? "bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25"
+                : "bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900"
+              }`}
             size="lg"
           >
-            Purchase Now
+            Start Training
           </Button>
         </CardFooter>
       </Card>

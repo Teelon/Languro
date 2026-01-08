@@ -11,18 +11,16 @@ const Footer = () => {
         <div className="-mx-4 flex flex-wrap">
           <div className="w-full px-4 sm:w-1/2 md:w-1/2 lg:w-4/12 xl:w-3/12">
             <div className="mb-10 w-full">
-              <Link href="/" className="mb-6 inline-block max-w-[160px]">
-                <Image
-                  src="/images/logo/logo-white.svg"
-                  alt="logo"
-                  width={140}
-                  height={30}
-                  className="max-w-full"
-                />
+              <Link href="/" className="mb-6 flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-lg">
+                  <span className="text-lg font-bold text-slate-900 leading-none mt-0.5">L</span>
+                </div>
+                <span className="text-xl font-black tracking-tight text-white">
+                  LAN<span className="text-primary">GURO</span>
+                </span>
               </Link>
               <p className="mb-8 max-w-[270px] text-base text-gray-7">
-                We create digital experiences for brands and companies by using
-                technology.
+                The Architecture of Rigor. We build tools for those who take language learning seriously.
               </p>
               <div className="-mx-3 flex items-center">
                 <Link
@@ -179,39 +177,39 @@ const Footer = () => {
           <div className="w-full px-4 sm:w-1/2 md:w-1/2 lg:w-3/12 xl:w-2/12">
             <div className="mb-10 w-full">
               <h4 className="mb-9 text-lg font-semibold text-white">
-                Our Products
+                Core Modules
               </h4>
               <ul>
                 <li>
                   <Link
-                    href="#"
-                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    href="/dashboard"
+                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary transition-colors"
                   >
-                    LineIcons
+                    Grammar Lab
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="#"
-                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    href="/dashboard"
+                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary transition-colors"
                   >
-                    Next.js Templates
+                    Production Studio
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="#"
-                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    href="/dashboard"
+                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary transition-colors"
                   >
-                    TailAdmin
+                    Immersion Library
                   </Link>
                 </li>
                 <li>
                   <Link
-                    href="#"
-                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary"
+                    href="/dashboard"
+                    className="mb-3 inline-block text-base text-gray-7 hover:text-primary transition-colors"
                   >
-                    PlainAdmin
+                    Command Dashboard
                   </Link>
                 </li>
               </ul>

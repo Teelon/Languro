@@ -1,16 +1,18 @@
 import React from "react";
 import { signIn } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 const SocialSignIn = () => {
   return (
-    <>
-      <button
+    <div className="w-full">
+      <Button
+        variant="outline"
         onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-gray-4 p-3.5 text-dark duration-200 ease-in hover:border-gray-5 hover:bg-gray dark:border-dark-3 dark:text-white dark:hover:bg-dark-3"
+        className="w-full h-12 flex items-center justify-center gap-2.5 dark:bg-transparent dark:hover:bg-accent dark:border-input"
       >
         <svg
-          width="23"
-          height="22"
+          width="20"
+          height="20"
           viewBox="0 0 23 22"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -45,10 +47,8 @@ const SocialSignIn = () => {
           </defs>
         </svg>
         Sign in with Google
-      </button>
-
-
-    </>
+      </Button>
+    </div>
   );
 };
 

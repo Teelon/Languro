@@ -6,6 +6,9 @@ import toast from "react-hot-toast";
 import Loader from "@/components/Common/Loader";
 import Link from "next/link";
 import Image from "next/image";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const ResetPassword = ({ token }: { token: string }) => {
   const [data, setData] = useState({
@@ -33,7 +36,7 @@ const ResetPassword = ({ token }: { token: string }) => {
           });
         }
       } catch (error: any) {
-        toast.error(error?.response?.data);
+        toast.error(error?.response?.data || "Invalid or expired token.");
         router.push("/forgot-password");
       }
     };
@@ -51,12 +54,18 @@ const ResetPassword = ({ token }: { token: string }) => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoader(true);
 
     if (data.newPassword === "") {
-      toast.error("Please enter your password.");
+      toast.error("Please enter your new password.");
       return;
     }
+
+    if (data.newPassword !== data.ReNewPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    setLoader(true);
 
     try {
       const res = await axios.post(`/api/forgot-password/update`, {
@@ -72,7 +81,7 @@ const ResetPassword = ({ token }: { token: string }) => {
 
       setLoader(false);
     } catch (error: any) {
-      toast.error(error.response.data);
+      toast.error(error?.response?.data || "Failed to update password.");
       setLoader(false);
     }
   };
@@ -82,282 +91,77 @@ const ResetPassword = ({ token }: { token: string }) => {
       <div className="container">
         <div className="-mx-4 flex flex-wrap">
           <div className="w-full px-4">
-            <div
-              className="wow fadeInUp relative mx-auto max-w-[525px] overflow-hidden rounded-lg bg-white px-8 py-14 text-center dark:bg-dark-2 sm:px-12 md:px-[60px]"
-              data-wow-delay=".15s"
-            >
-              <div className="mb-10 text-center">
-                <Link href="/" className="mx-auto inline-block max-w-[160px]">
-                  <Image
-                    src="/images/logo/logo.svg"
-                    alt="logo"
-                    width={140}
-                    height={30}
-                    className="dark:hidden"
-                  />
-                  <Image
-                    src="/images/logo/logo-white.svg"
-                    alt="logo"
-                    width={140}
-                    height={30}
-                    className="hidden dark:block"
-                  />
-                </Link>
-              </div>
-
-              <form onSubmit={handleSubmit}>
-                <div className="mb-[22px]">
-                  <input
-                    type="text"
-                    placeholder="New password"
-                    name="newPassword"
-                    value={data?.newPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-dark outline-none transition placeholder:text-dark-6 focus:border-primary focus-visible:shadow-none dark:border-dark-3 dark:text-white dark:focus:border-primary"
-                  />
+            <Card className="mx-auto max-w-[500px] border-none shadow-none text-center">
+              <CardContent className="p-4 md:p-12">
+                <div className="mb-10 text-center">
+                  <Link href="/" className="mx-auto inline-block max-w-[160px]">
+                    <Image
+                      src="/images/logo/logo.svg"
+                      alt="logo"
+                      width={140}
+                      height={30}
+                      className="dark:hidden"
+                    />
+                    <Image
+                      src="/images/logo/logo-white.svg"
+                      alt="logo"
+                      width={140}
+                      height={30}
+                      className="hidden dark:block"
+                    />
+                  </Link>
                 </div>
 
-                <div className="mb-[22px]">
-                  <input
-                    type="text"
-                    placeholder="New password"
-                    name="newPassword"
-                    value={data?.newPassword}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-dark outline-none transition placeholder:text-dark-6 focus:border-primary focus-visible:shadow-none dark:border-dark-3 dark:text-white dark:focus:border-primary"
-                  />
-                </div>
-                <div className="">
-                  <button
-                    type="submit"
-                    className="flex w-full cursor-pointer items-center justify-center rounded-md border border-primary bg-primary px-5 py-3 text-base text-white transition duration-300 ease-in-out hover:bg-blue-dark"
-                  >
-                    Save Password {loader && <Loader />}
-                  </button>
-                </div>
-              </form>
+                <h2 className="mb-4 text-2xl font-bold text-dark dark:text-white sm:text-3xl">
+                  Set New Password
+                </h2>
+                <p className="mb-10 text-base text-body-secondary">
+                  Please enter and confirm your new password below.
+                </p>
 
-              <div>
-                <span className="absolute right-1 top-1">
-                  <svg
-                    width="40"
-                    height="40"
-                    viewBox="0 0 40 40"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle
-                      cx="1.39737"
-                      cy="38.6026"
-                      r="1.39737"
-                      transform="rotate(-90 1.39737 38.6026)"
-                      fill="#3056D3"
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-[22px]">
+                    <Input
+                      type="password"
+                      placeholder="New password"
+                      name="newPassword"
+                      value={data?.newPassword}
+                      onChange={handleChange}
+                      required
+                      className="w-full"
                     />
-                    <circle
-                      cx="1.39737"
-                      cy="1.99122"
-                      r="1.39737"
-                      transform="rotate(-90 1.39737 1.99122)"
-                      fill="#3056D3"
+                  </div>
+
+                  <div className="mb-[22px]">
+                    <Input
+                      type="password"
+                      placeholder="Confirm new password"
+                      name="ReNewPassword"
+                      value={data?.ReNewPassword}
+                      onChange={handleChange}
+                      required
+                      className="w-full"
                     />
-                    <circle
-                      cx="13.6943"
-                      cy="38.6026"
-                      r="1.39737"
-                      transform="rotate(-90 13.6943 38.6026)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="13.6943"
-                      cy="1.99122"
-                      r="1.39737"
-                      transform="rotate(-90 13.6943 1.99122)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="25.9911"
-                      cy="38.6026"
-                      r="1.39737"
-                      transform="rotate(-90 25.9911 38.6026)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="25.9911"
-                      cy="1.99122"
-                      r="1.39737"
-                      transform="rotate(-90 25.9911 1.99122)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="38.288"
-                      cy="38.6026"
-                      r="1.39737"
-                      transform="rotate(-90 38.288 38.6026)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="38.288"
-                      cy="1.99122"
-                      r="1.39737"
-                      transform="rotate(-90 38.288 1.99122)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="1.39737"
-                      cy="26.3057"
-                      r="1.39737"
-                      transform="rotate(-90 1.39737 26.3057)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="13.6943"
-                      cy="26.3057"
-                      r="1.39737"
-                      transform="rotate(-90 13.6943 26.3057)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="25.9911"
-                      cy="26.3057"
-                      r="1.39737"
-                      transform="rotate(-90 25.9911 26.3057)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="38.288"
-                      cy="26.3057"
-                      r="1.39737"
-                      transform="rotate(-90 38.288 26.3057)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="1.39737"
-                      cy="14.0086"
-                      r="1.39737"
-                      transform="rotate(-90 1.39737 14.0086)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="13.6943"
-                      cy="14.0086"
-                      r="1.39737"
-                      transform="rotate(-90 13.6943 14.0086)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="25.9911"
-                      cy="14.0086"
-                      r="1.39737"
-                      transform="rotate(-90 25.9911 14.0086)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="38.288"
-                      cy="14.0086"
-                      r="1.39737"
-                      transform="rotate(-90 38.288 14.0086)"
-                      fill="#3056D3"
-                    />
-                  </svg>
-                </span>
-                <span className="absolute bottom-1 left-1">
-                  <svg
-                    width="29"
-                    height="40"
-                    viewBox="0 0 29 40"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle
-                      cx="2.288"
-                      cy="25.9912"
-                      r="1.39737"
-                      transform="rotate(-90 2.288 25.9912)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="14.5849"
-                      cy="25.9911"
-                      r="1.39737"
-                      transform="rotate(-90 14.5849 25.9911)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="26.7216"
-                      cy="25.9911"
-                      r="1.39737"
-                      transform="rotate(-90 26.7216 25.9911)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="2.288"
-                      cy="13.6944"
-                      r="1.39737"
-                      transform="rotate(-90 2.288 13.6944)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="14.5849"
-                      cy="13.6943"
-                      r="1.39737"
-                      transform="rotate(-90 14.5849 13.6943)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="26.7216"
-                      cy="13.6943"
-                      r="1.39737"
-                      transform="rotate(-90 26.7216 13.6943)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="2.288"
-                      cy="38.0087"
-                      r="1.39737"
-                      transform="rotate(-90 2.288 38.0087)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="2.288"
-                      cy="1.39739"
-                      r="1.39737"
-                      transform="rotate(-90 2.288 1.39739)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="14.5849"
-                      cy="38.0089"
-                      r="1.39737"
-                      transform="rotate(-90 14.5849 38.0089)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="26.7216"
-                      cy="38.0089"
-                      r="1.39737"
-                      transform="rotate(-90 26.7216 38.0089)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="14.5849"
-                      cy="1.39761"
-                      r="1.39737"
-                      transform="rotate(-90 14.5849 1.39761)"
-                      fill="#3056D3"
-                    />
-                    <circle
-                      cx="26.7216"
-                      cy="1.39761"
-                      r="1.39737"
-                      transform="rotate(-90 26.7216 1.39761)"
-                      fill="#3056D3"
-                    />
-                  </svg>
-                </span>
-              </div>
-            </div>
+                  </div>
+                  <div className="mb-9">
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={loader}
+                    >
+                      Update Password {loader && <Loader />}
+                    </Button>
+                  </div>
+                </form>
+
+                <p className="text-body-secondary text-base">
+                  Remember your password?{" "}
+                  <Link href="/signin" className="text-primary hover:underline font-medium">
+                    Sign In
+                  </Link>
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

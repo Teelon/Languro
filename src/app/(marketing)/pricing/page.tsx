@@ -4,15 +4,14 @@ import Pricing from "@/components/Pricing";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title:
-    "Pricing Page | Play SaaS Starter Kit and Boilerplate for Next.js",
-  description: "This is pricing page description",
+  title: "Pricing & Training Plans | Languro",
+  description: "Select the training regimen that matches your ambitions. Choose from Cadet, Commander, or Elite plans.",
 };
 
 const PricingPage = () => {
   return (
     <>
-      <Breadcrumb pageName="Pricing Page" />
+      <Breadcrumb pageName="Training Plans" />
       <Pricing />
       <Faq />
     </>

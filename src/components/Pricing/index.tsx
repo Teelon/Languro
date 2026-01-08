@@ -7,14 +7,14 @@ const Pricing = () => {
   return (
     <section
       id="pricing"
-      className="relative z-20 overflow-hidden bg-white pb-12 pt-20 dark:bg-slate-900 lg:pb-[90px] lg:pt-28"
+      className="relative z-20 overflow-hidden bg-white pb-12 pt-20 dark:bg-slate-950 lg:pb-[90px] lg:pt-28"
     >
       <div className="container">
         <div className="mb-[60px]">
           <SectionTitle
-            subtitle="Pricing Table"
-            title="Our Pricing Plan"
-            paragraph="There are many variations of passages of Lorem Ipsum available but the majority have suffered alteration in some form."
+            subtitle="Training Plans"
+            title="The Architecture of Mastery"
+            paragraph="Select the training regimen that matches your ambitions. Whether you're a weekend cadet or a full-time linguist, we have the right plan for your journey."
             center
           />
         </div>

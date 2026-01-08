@@ -4,6 +4,8 @@ import { signIn } from "next-auth/react";
 import toast from "react-hot-toast";
 import { validateEmail } from "@/utils/validateEmail";
 import Loader from "@/components/Common/Loader";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const MagicLink = () => {
   const [email, setEmail] = useState("");
@@ -43,23 +45,23 @@ const MagicLink = () => {
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-[22px]">
-        <input
+        <Input
           type="email"
           placeholder="Email"
           name="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value.toLowerCase())}
-          className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-dark outline-none transition placeholder:text-dark-6 focus:border-primary focus-visible:shadow-none dark:border-dark-3 dark:text-white dark:focus:border-primary"
+          className="w-full"
         />
       </div>
       <div className="mb-9">
-        <button
+        <Button
           type="submit"
-          className="flex w-full cursor-pointer items-center justify-center rounded-md border border-primary bg-primary px-5 py-3 text-base text-white transition duration-300 ease-in-out hover:bg-blue-dark"
+          className="w-full"
         >
           Send Magic Link {loader && <Loader />}
-        </button>
+        </Button>
       </div>
     </form>
   );

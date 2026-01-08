@@ -3,12 +3,12 @@ import SingleFaq from "./SingleFaq";
 
 const Faq = () => {
   return (
-    <section className="relative z-20 overflow-hidden bg-white pb-8 pt-20 dark:bg-dark lg:pb-[50px] lg:pt-[120px]">
+    <section className="relative z-20 overflow-hidden bg-white pb-8 pt-20 dark:bg-slate-950 lg:pb-[50px] lg:pt-[120px]">
       <div className="container">
         <SectionTitle
-          subtitle="FAQ"
-          title="Any Questions? Answered"
-          paragraph="There are many variations of passages of Lorem Ipsum available but the majority have suffered alteration in some form."
+          subtitle="Intelligence Briefing"
+          title="Common Inquiries"
+          paragraph="Understanding the Architecture of Rigor. Here are the most frequent questions from our cadets and commanders."
           width="640px"
           center
         />
@@ -16,31 +16,31 @@ const Faq = () => {
         <div className="-mx-4 mt-[60px] flex flex-wrap lg:mt-20">
           <div className="w-full px-4 lg:w-1/2">
             <SingleFaq
-              question="How to use TailGrids?"
-              answer="It takes 2-3 weeks to get your first blog post ready. That includes the in-depth research & creation of your monthly content marketing strategy that we do before writing your first blog post, Ipsum available ."
+              question="What is the Philosophy of Rigor?"
+              answer="It's our core belief that language is a skill to be trained, not just a subject to be studied. Our tools are designed for high-intensity practice and measurable mastery."
             />
             <SingleFaq
-              question="How to download icons from LineIcons?"
-              answer="It takes 2-3 weeks to get your first blog post ready. That includes the in-depth research & creation of your monthly content marketing strategy that we do before writing your first blog post, Ipsum available ."
+              question="How does The Grammar Lab differ from other apps?"
+              answer="Instead of simple matching games, we use analytical decomposition. You'll learn to see the skeletal structure of sentences, allowing you to generate your own thoughts faster."
             />
             <SingleFaq
-              question="Is GrayGrids part of UIdeck?"
-              answer="It takes 2-3 weeks to get your first blog post ready. That includes the in-depth research & creation of your monthly content marketing strategy that we do before writing your first blog post, Ipsum available ."
+              question="Is Languro suitable for total beginners?"
+              answer="Yes. While our methods are intense, they are structured to take you from 'Zero to One' by building a rock-solid foundation that won't crumble as you reach advanced levels."
             />
           </div>
 
           <div className="w-full px-4 lg:w-1/2">
             <SingleFaq
-              question="Can I use this template for commercial project?"
-              answer="It takes 2-3 weeks to get your first blog post ready. That includes the in-depth research & creation of your monthly content marketing strategy that we do before writing your first blog post, Ipsum available ."
+              question="Can I upgrade my training plan later?"
+              answer="Absolutely. You can transition from Cadet to Commander or Elite at any time through your dashboard. Your progress and data will stay perfectly synced."
             />
             <SingleFaq
-              question="Do you have plan to releasing Play Pro?"
-              answer="It takes 2-3 weeks to get your first blog post ready. That includes the in-depth research & creation of your monthly content marketing strategy that we do before writing your first blog post, Ipsum available ."
+              question="Does it support multiple languages?"
+              answer="Languro currently supports Spanish, French, Italian, and German, with more field modules in active development for our Commander and Elite members."
             />
             <SingleFaq
-              question="Where and how to host this template?"
-              answer="It takes 2-3 weeks to get your first blog post ready. That includes the in-depth research & creation of your monthly content marketing strategy that we do before writing your first blog post, Ipsum available ."
+              question="How do I access the Immersion Library?"
+              answer="The Immersion Library is available to all members, with curated high-frequency content designed to bridge the gap between study and real-world intelligence."
             />
           </div>
         </div>
