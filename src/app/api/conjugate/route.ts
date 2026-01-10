@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { verb, language } = body;
+        const { verb, language, mode = 'check', context } = body;
 
         // Note: 'language' is used as a HINT/PREFERENCE for homographs (e.g. "comes" -> English vs Spanish).
         // If exact match fails, we use this to prioritize the Reverse Lookup.
@@ -19,10 +19,70 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Verb is required' }, { status: 400 });
         }
 
+        // --- MODE: GENERATE (Step 6 onwards) ---
+        // This is called explicitly when 'check' returns 'needsGeneration: true'
+        if (mode === 'generate') {
+            console.log(`[API] ═══════════════════════════════════════════════════`);
+            console.log(`[API] 🚀 GENERATE REQUEST: "${verb}" (context: ${JSON.stringify(context)})`);
+            console.log(`[API] ═══════════════════════════════════════════════════`);
+
+            // Use provided context or fall back to normalizing verb if missing (shouldn't happen in proper flow)
+            const genContext = context || (language ? { language, infinitive: verb } : undefined);
+            const normalizedInput = verb.toLowerCase().trim();
+
+            // STEP 6: Full LLM call to generate conjugations
+            console.log(`[API] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+            console.log(`[API] 🤖 STEP 6: LLM Generation (using: "${genContext?.infinitive || normalizedInput}")`);
+
+            // Ensure generateConjugations can handle the context correctly
+            const generatedData = await generateConjugations(genContext?.infinitive || normalizedInput, genContext);
+            console.log(`[API] ✅ STEP 6 DONE: Generated "${generatedData.infinitive}" (${generatedData.language.toUpperCase()}) with ${generatedData.tenses.length} tenses`);
+
+            // STEP 7: Save to DB
+            console.log(`[API] 💾 STEP 7: Saving to database...`);
+            const saved = await saveConjugations(generatedData);
+            if (!saved) {
+                console.error('[API] ❌ STEP 7 FAILED: Could not save to DB');
+            } else {
+                console.log(`[API] ✅ STEP 7 DONE: Cached "${generatedData.infinitive}" for future requests`);
+            }
+
+            // STEP 8: Get suggestions
+            console.log(`[API] 💡 STEP 8: Fetching "Did you mean?" suggestions...`);
+            const rawSuggestions = await getSuggestions(normalizedInput, undefined, 0.6, 5);
+            const filteredSuggestions = rawSuggestions.filter(
+                s => s.word.toLowerCase() !== generatedData.infinitive.toLowerCase()
+            );
+            if (filteredSuggestions.length > 0) {
+                console.log(`[API] 💡 STEP 8 RESULT: ${filteredSuggestions.length} suggestions (${filteredSuggestions.map(s => s.word).join(', ')})`);
+            } else {
+                console.log(`[API] 💡 STEP 8 RESULT: No suggestions (${rawSuggestions.length} filtered out)`);
+            }
+
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+            console.log(`[API] ═══════════════════════════════════════════════════`);
+            console.log(`[API] ⏱️  DONE: LLM generated "${generatedData.infinitive}" (${elapsed}s)`);
+            console.log(`[API] ═══════════════════════════════════════════════════`);
+
+            return NextResponse.json({
+                ...generatedData,
+                metadata: {
+                    source: 'llm-generated',
+                    originalInput: normalizedInput,
+                    detectedLanguage: generatedData.language,
+                    suggestions: filteredSuggestions.length > 0 ? filteredSuggestions : undefined
+                }
+            });
+        }
+
+
+        // --- MODE: CHECK (Steps 1-5) ---
+        // Default mode. Checks DB and detects language. If not found, tells frontend to call 'generate'.
+
         // STEP 1: Normalize Input
         const normalizedVerb = verb.toLowerCase().trim();
         console.log(`[API] ═══════════════════════════════════════════════════`);
-        console.log(`[API] � CONJUGATE REQUEST: "${normalizedVerb}" (preferred: ${language?.toUpperCase() || 'AUTO'})`);
+        console.log(`[API] 🚀 CHECK REQUEST: "${normalizedVerb}" (preferred: ${language?.toUpperCase() || 'AUTO'})`);
         console.log(`[API] ═══════════════════════════════════════════════════`);
 
         // STEP 2: Search verb_translations (exact infinitive match)
@@ -72,7 +132,7 @@ export async function POST(req: NextRequest) {
         console.log(`[API] ❌ STEP 3 MISS: No conjugated form match`);
 
         // STEP 3.5: Fuzzy search fallback
-        console.log(`[API] � STEP 3.5: Fuzzy search (typo correction)...`);
+        console.log(`[API] 🔍 STEP 3.5: Fuzzy search (typo correction)...`);
 
         const fuzzyInfinitive = await findVerbFuzzy(normalizedVerb, language);
         if (fuzzyInfinitive) {
@@ -122,7 +182,7 @@ export async function POST(req: NextRequest) {
 
         // STEP 4: Light LLM call to detect language + infinitive
         console.log(`[API] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-        console.log(`[API] � STEP 4: LLM Detection (preferred: ${language?.toUpperCase() || 'AUTO'})`);
+        console.log(`[API] 🔍 STEP 4: LLM Detection (preferred: ${language?.toUpperCase() || 'AUTO'})`);
         const detection = await detectLanguageAndInfinitive(normalizedVerb, language);
 
         let knownContext = undefined;
@@ -165,9 +225,7 @@ export async function POST(req: NextRequest) {
             // If not found in DB, use this context for generation
             knownContext = { language: detection.language, infinitive: detection.infinitive };
         } else {
-            console.warn(`[Conjugate API] ⚠️ Step 4 FAILED: Detection uncertain`);
-
-            // STEP 4.5: Fallback to fuzzy search in ANY language (no preference filter)
+            // Fallback to fuzzy search in ANY language (Steps 4.5)
             console.log(`[Conjugate API] 🔮 Step 4.5: Fallback to fuzzy search (any language)...`);
             const anyLangFuzzy = await findVerbFuzzy(normalizedVerb, undefined, 0.3);
             if (anyLangFuzzy) {
@@ -188,8 +246,8 @@ export async function POST(req: NextRequest) {
                 }
             }
 
-            // Nothing found anywhere - return error
-            console.error(`[Conjugate API] ❌ Nothing found for "${normalizedVerb}" in any language`);
+            // If failed to detect language via LLM and no fallback fuzzy match, report error immediately (no generation possible)
+            console.error(`[API] ❌ Nothing found for "${normalizedVerb}" in any language`);
             return NextResponse.json({
                 error: 'VERB_NOT_FOUND',
                 message: `Could not find or recognize "${normalizedVerb}" as a verb in any language.`,
@@ -197,46 +255,14 @@ export async function POST(req: NextRequest) {
             }, { status: 404 });
         }
 
-        // STEP 6: Full LLM call to generate conjugations
-        console.log(`[API] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-        console.log(`[API] 🤖 STEP 6: LLM Generation (using: "${knownContext?.infinitive || normalizedVerb}")`);
-        const generatedData = await generateConjugations(normalizedVerb, knownContext);
-        console.log(`[API] ✅ STEP 6 DONE: Generated "${generatedData.infinitive}" (${generatedData.language.toUpperCase()}) with ${generatedData.tenses.length} tenses`);
 
-        // STEP 7: Save to DB
-        console.log(`[API] 💾 STEP 7: Saving to database...`);
-        const saved = await saveConjugations(generatedData);
-        if (!saved) {
-            console.error('[API] ❌ STEP 7 FAILED: Could not save to DB');
-        } else {
-            console.log(`[API] ✅ STEP 7 DONE: Cached "${generatedData.infinitive}" for future requests`);
-        }
-
-        // STEP 8: Get suggestions
-        console.log(`[API] 💡 STEP 8: Fetching "Did you mean?" suggestions...`);
-        const rawSuggestions = await getSuggestions(normalizedVerb, undefined, 0.6, 5);
-        const filteredSuggestions = rawSuggestions.filter(
-            s => s.word.toLowerCase() !== generatedData.infinitive.toLowerCase()
-        );
-        if (filteredSuggestions.length > 0) {
-            console.log(`[API] 💡 STEP 8 RESULT: ${filteredSuggestions.length} suggestions (${filteredSuggestions.map(s => s.word).join(', ')})`);
-        } else {
-            console.log(`[API] 💡 STEP 8 RESULT: No suggestions (${rawSuggestions.length} filtered out)`);
-        }
-
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-        console.log(`[API] ═══════════════════════════════════════════════════`);
-        console.log(`[API] ⏱️  DONE: LLM generated "${generatedData.infinitive}" (${elapsed}s)`);
-        console.log(`[API] ═══════════════════════════════════════════════════`);
-
+        // IF WE REACH HERE: Not found in any DB step, but detected by LLM as valid (or suggestion)
+        // Return instructions to the frontend to start the heavy generation process
+        console.log(`[API] 📋 CHECK COMPLETE: Verb needs generation. Returning needsGeneration=true`);
         return NextResponse.json({
-            ...generatedData,
-            metadata: {
-                source: 'llm-generated',
-                originalInput: normalizedVerb,
-                detectedLanguage: generatedData.language,
-                suggestions: filteredSuggestions.length > 0 ? filteredSuggestions : undefined
-            }
+            needsGeneration: true,
+            context: knownContext,
+            originalInput: normalizedVerb
         });
 
     } catch (error: any) {
