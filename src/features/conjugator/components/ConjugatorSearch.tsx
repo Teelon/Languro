@@ -16,6 +16,18 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState('');
+    const [currentFact, setCurrentFact] = useState(0);
+
+    // Rotate facts while loading
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (loading) {
+            interval = setInterval(() => {
+                setCurrentFact((prev) => (prev + 1) % LANGUAGE_FACTS.length);
+            }, 11000);
+        }
+        return () => clearInterval(interval);
+    }, [loading]);
 
     // Perform search with given parameters
     const performSearch = useCallback(async (searchVerb: string, searchLang: 'en' | 'fr' | 'es') => {
@@ -169,13 +181,39 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
                 </button>
             </div>
 
-            {error && (
+            {loading && (
+                <div className="mt-6 rounded-lg bg-blue-50/50 p-6 text-center dark:bg-blue-900/10">
+                    <div className="mb-3 flex justify-center">
+                        <span className="relative flex h-3 w-3">
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex h-3 w-3 rounded-full bg-blue-500"></span>
+                        </span>
+                    </div>
+                    <p className="mb-2 text-sm font-medium text-blue-800 dark:text-blue-300">
+                        Generating new verb tables (this takes ~20s)...
+                    </p>
+                    <p className="mb-4 text-xs text-blue-600/80 dark:text-blue-400/80">
+                        We're adding this to our database so next time it will be instant! 🚀
+                    </p>
+
+                    <div className="mx-auto max-w-lg border-t border-blue-100 py-3 dark:border-blue-800/30">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-blue-400 dark:text-blue-500">
+                            Did you know?
+                        </p>
+                        <p className="mt-1 text-sm italic text-slate-600 dark:text-slate-300 animate-in fade-in slide-in-from-bottom-2 duration-500" key={currentFact}>
+                            "{LANGUAGE_FACTS[currentFact]}"
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {!loading && error && (
                 <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
                     {error}
                 </div>
             )}
 
-            {notification && (
+            {!loading && notification && (
                 <div className="mt-4 rounded-md bg-blue-50 p-4 text-sm text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
                     {notification}
                 </div>
@@ -183,3 +221,19 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
         </div>
     );
 }
+
+const LANGUAGE_FACTS = [
+    "Spanish has two verbs for 'to be' (ser and estar), which often confuses learners but adds nuance.",
+    "English is one of the few languages where the future tense uses a helper verb (will) instead of a suffix.",
+    "French verb endings in the present tense (-e, -es, -e, -ent) are often silent, making listening tricky!",
+    "The most common verb in the English language is 'be'.",
+    "Japanese has no future tense; it uses the present tense with time words.",
+    "In German, the verb often gets kicked to the very end of the sentence.",
+    "Arabic verbs are based on a root system of usually three letters.",
+    "Mandarin Chinese verbs do not conjugate for person, number, or tense!",
+    "Approximately 7,000 languages are spoken in the world today.",
+    "Language learning actually increases the size of your brain!",
+    "The English word 'run' has over 645 different meanings.",
+    "Spanish is the second most spoken native language in the world after Mandarin.",
+    "French was the official language of England for over 300 years (1066-1362)."
+];
