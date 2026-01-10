@@ -50,12 +50,20 @@ export interface FullConjugationData {
     metadata?: {
         originalInput?: string;
         detectedLanguage?: string;
-        source?: 'db-cache' | 'llm-generation' | 'db-fallback';
+        source?: 'db-cache' | 'db-cache-reverse' | 'db-cache-fuzzy' | 'db-cache-fuzzy-conjugation' | 'db-cache-detected' | 'llm-generated' | 'llm-generation' | 'db-fallback';
         wasTranslation?: boolean;
         sourceLanguage?: string;
         targetLanguage?: string;
         wasConjugatedForm?: boolean;
+        wasFuzzyMatch?: boolean;
+        matchedForm?: string;
+        similarity?: number;
         detectedInfinitive?: string;
+        suggestions?: Array<{
+            word: string;
+            language: 'en' | 'fr' | 'es';
+            similarity: number;
+        }>;
     };
     tenses: {
         tense_name: string;

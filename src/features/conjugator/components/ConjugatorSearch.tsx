@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 
 import { FullConjugationData } from '../types';
@@ -17,8 +17,11 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
     const [error, setError] = useState('');
     const [notification, setNotification] = useState('');
 
-    const handleSearch = async () => {
-        if (!verb) return;
+    // Perform search with given parameters
+    const performSearch = useCallback(async (searchVerb: string, searchLang: 'en' | 'fr' | 'es') => {
+        if (!searchVerb) return;
+        setVerb(searchVerb);
+        setLanguage(searchLang);
         setLoading(true);
         setError('');
         setNotification('');
@@ -27,7 +30,7 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
             const res = await fetch('/api/conjugate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ verb, language }),
+                body: JSON.stringify({ verb: searchVerb, language: searchLang }),
             });
 
             const data = await res.json();
@@ -40,7 +43,7 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
                     'es': 'Spanish'
                 };
                 const suggestedName = languageNames[data.suggestedLanguage];
-                const selectedName = languageNames[language];
+                const selectedName = languageNames[searchLang];
 
                 // Show immediate switching message
                 setNotification(
@@ -54,20 +57,20 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
                     setLanguage(data.suggestedLanguage);
 
                     // Update notification to show we're searching
-                    setNotification(`Searching for "${verb}" in ${suggestedName}...`);
+                    setNotification(`Searching for "${searchVerb}" in ${suggestedName}...`);
 
                     // Re-search with correct language
                     const retryRes = await fetch('/api/conjugate', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ verb, language: data.suggestedLanguage }),
+                        body: JSON.stringify({ verb: searchVerb, language: data.suggestedLanguage }),
                     });
                     const retryData = await retryRes.json();
                     if (retryRes.ok) {
                         onData(retryData);
                         setNotification(`✓ Switched to ${suggestedName} and found "${retryData.infinitive}".`);
                     } else {
-                        setError(`Could not find "${verb}" in ${suggestedName}`);
+                        setError(`Could not find "${searchVerb}" in ${suggestedName}`);
                     }
                     setLoading(false);
                 }, 800);
@@ -82,14 +85,14 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
             if (data.metadata) {
                 if (data.metadata.wasConjugatedForm) {
                     setNotification(`Found conjugated form. Showing full conjugation for "${data.metadata.detectedInfinitive}".`);
-                } else if (data.metadata.detectedLanguage && data.metadata.detectedLanguage !== language) {
+                } else if (data.metadata.detectedLanguage && data.metadata.detectedLanguage !== searchLang) {
                     const languageNames: Record<string, string> = {
                         'en': 'English',
                         'fr': 'French',
                         'es': 'Spanish'
                     };
                     const suggestedName = languageNames[data.metadata.detectedLanguage];
-                    const selectedName = languageNames[language];
+                    const selectedName = languageNames[searchLang];
                     setNotification(`This appears to be a ${suggestedName} verb, but you selected ${selectedName}. Consider switching languages for better results.`);
                 }
             }
@@ -100,7 +103,23 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
             setError(err.message);
             setLoading(false); // Only set loading false on actual error
         }
-    };
+    }, [onData]);
+
+    // Handle search button click
+    const handleSearch = useCallback(() => {
+        performSearch(verb, language);
+    }, [performSearch, verb, language]);
+
+    // Listen for suggestion clicks from ConjugatorResults
+    useEffect(() => {
+        const handleSuggestionClick = (e: Event) => {
+            const customEvent = e as CustomEvent<{ verb: string; language: 'en' | 'fr' | 'es' }>;
+            performSearch(customEvent.detail.verb, customEvent.detail.language);
+        };
+
+        window.addEventListener('conjugator-search', handleSuggestionClick);
+        return () => window.removeEventListener('conjugator-search', handleSuggestionClick);
+    }, [performSearch]);
 
     return (
         <div className="mx-auto mb-8 max-w-[900px] p-4">

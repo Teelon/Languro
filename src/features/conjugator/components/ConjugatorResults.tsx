@@ -88,6 +88,13 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
     const { data: session } = useSession();
     const [currentTab, setCurrentTab] = useState(0);
 
+    // Notification dismissal state
+    const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
+
+    const dismissNotification = (id: string) => {
+        setDismissedNotifications(prev => new Set(prev).add(id));
+    };
+
     // Audio Playback State
     const [playingUrl, setPlayingUrl] = useState<string | null>(null);
 
@@ -117,6 +124,7 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
     const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [selectedConjugationId, setSelectedConjugationId] = useState<number | null>(null);
     const [votedIds, setVotedIds] = useState<Set<number>>(new Set());
+
 
     // Load voted IDs from local storage on mount
     useEffect(() => {
@@ -252,25 +260,86 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                 {/* Translation / Detection Feedback */}
                 {data.metadata && (
                     <div className="mt-4 space-y-2">
-                        {data.metadata.wasTranslation && (
-                            <div className="flex items-center rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                        {data.metadata.wasTranslation && !dismissedNotifications.has('translation') && (
+                            <div className="flex items-center justify-between rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                                 <p>
                                     Translated from <strong>{data.metadata.originalInput}</strong> ({data.metadata.sourceLanguage?.toUpperCase()}) to <strong>{data.infinitive}</strong> ({data.metadata.targetLanguage?.toUpperCase()}).
                                 </p>
+                                <button
+                                    onClick={() => dismissNotification('translation')}
+                                    className="ml-4 rounded p-1 opacity-60 transition-opacity hover:opacity-100"
+                                    aria-label="Dismiss notification"
+                                >
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         )}
-                        {!data.metadata.wasTranslation && data.metadata.originalInput && data.metadata.originalInput.toLowerCase() !== data.infinitive.toLowerCase() && (
-                            <div className="flex items-center rounded-md bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                        {!data.metadata.wasTranslation && data.metadata.originalInput && data.metadata.originalInput.toLowerCase() !== data.infinitive.toLowerCase() && !dismissedNotifications.has('found') && (
+                            <div className="flex items-center justify-between rounded-md bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
                                 <p>
                                     Found <strong>{data.infinitive}</strong> for <em>"{data.metadata.originalInput}"</em>.
                                 </p>
+                                <button
+                                    onClick={() => dismissNotification('found')}
+                                    className="ml-4 rounded p-1 opacity-60 transition-opacity hover:opacity-100"
+                                    aria-label="Dismiss notification"
+                                >
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         )}
-                        {!data.metadata.wasTranslation && data.metadata.source === 'db-fallback' && (
-                            <div className="flex items-center rounded-md bg-orange-50 px-4 py-3 text-sm text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
+                        {!data.metadata.wasTranslation && data.metadata.source === 'db-fallback' && !dismissedNotifications.has('fallback') && (
+                            <div className="flex items-center justify-between rounded-md bg-orange-50 px-4 py-3 text-sm text-orange-700 dark:bg-orange-900/20 dark:text-orange-300">
                                 <p>
                                     "{data.metadata.originalInput}" was found in <strong>{data.language === 'fr' ? 'French' : data.language === 'es' ? 'Spanish' : 'English'}</strong>. Switched language automatically.
                                 </p>
+                                <button
+                                    onClick={() => dismissNotification('fallback')}
+                                    className="ml-4 rounded p-1 opacity-60 transition-opacity hover:opacity-100"
+                                    aria-label="Dismiss notification"
+                                >
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        )}
+                        {/* Did you mean? Suggestions */}
+                        {data.metadata.suggestions && data.metadata.suggestions.length > 0 && !dismissedNotifications.has('suggestions') && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-medium">Did you mean:</span>
+                                    {data.metadata.suggestions.map((suggestion: { word: string; language: string; similarity: number }, idx: number) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => {
+                                                // Dispatch custom event to trigger search
+                                                window.dispatchEvent(new CustomEvent('conjugator-search', {
+                                                    detail: { verb: suggestion.word, language: suggestion.language }
+                                                }));
+                                            }}
+                                            className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 font-medium transition hover:bg-amber-200 dark:bg-amber-800/40 dark:hover:bg-amber-700/50"
+                                        >
+                                            {suggestion.word}
+                                            <span className="text-xs opacity-70">
+                                                ({suggestion.language === 'es' ? '🇪🇸' : suggestion.language === 'fr' ? '🇫🇷' : '🇬🇧'})
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => dismissNotification('suggestions')}
+                                    className="rounded p-1 opacity-60 transition-opacity hover:opacity-100"
+                                    aria-label="Dismiss notification"
+                                >
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         )}
                     </div>
