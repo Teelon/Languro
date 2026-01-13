@@ -1,8 +1,10 @@
 import { BellIcon, SearchIcon } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { ModeToggle } from "@/components/mode-toggle"
 
 export function SiteHeader() {
   return (
@@ -25,6 +27,7 @@ export function SiteHeader() {
       </div>
 
       <div className="flex items-center gap-2">
+        <ModeToggle />
         <Button variant="ghost" size="icon">
           <BellIcon className="h-5 w-5" />
           <span className="sr-only">Notifications</span>

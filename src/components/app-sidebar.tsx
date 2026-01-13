@@ -2,27 +2,15 @@
 
 import * as React from "react"
 import {
-  ArrowUpCircleIcon,
-  BarChartIcon,
-  CameraIcon,
-  ClipboardListIcon,
-  DatabaseIcon,
-  FileCodeIcon,
-  FileIcon,
-  FileTextIcon,
-  FolderIcon,
-  HelpCircleIcon,
   LayoutDashboardIcon,
   ListIcon,
-  SearchIcon,
   SettingsIcon,
-  UsersIcon,
+  LogOutIcon,
 } from "lucide-react"
 
-import { LogOutIcon } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 import {
   Sidebar,
   SidebarContent,
@@ -34,11 +22,6 @@ import {
 } from "@/components/ui/sidebar"
 
 const data = {
-  user: {
-    name: "User",
-    email: "user@example.com",
-    avatar: "",
-  },
   navMain: [
     {
       title: "Overview",
@@ -59,10 +42,18 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: session } = useSession()
+
+  const user = {
+    name: session?.user?.name || "User",
+    email: session?.user?.email || "user@example.com",
+    avatar: session?.user?.image || "",
+  }
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="pb-4">
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
