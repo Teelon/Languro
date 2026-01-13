@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   OnboardingState,
   OnboardingData,
@@ -30,6 +31,7 @@ const initialData: OnboardingData = {
 const STORAGE_KEY = 'onboarding_progress';
 
 export function useOnboarding() {
+  const { data: session, update } = useSession();
   const [state, setState] = useState<OnboardingState>({
     ...initialData,
     currentStep: 1,
@@ -251,6 +253,11 @@ export function useOnboarding() {
       // Clear local storage on success
       localStorage.removeItem(STORAGE_KEY);
 
+      // Update session to reflect completed onboarding
+      if (session) {
+        await update({ user: { hasCompletedOnboarding: true } });
+      }
+
       setState((prev) => ({ ...prev, isLoading: false }));
       return true;
     } catch (err: unknown) {
@@ -258,7 +265,7 @@ export function useOnboarding() {
       setState((prev) => ({ ...prev, isLoading: false, error: message }));
       return false;
     }
-  }, [state]);
+  }, [state, session, update]);
 
   // Available target languages (exclude native)
   const availableTargetLanguages = useCallback((): SupportedLanguage[] => {

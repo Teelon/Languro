@@ -34,6 +34,21 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL("/signin", req.url));
   }
 
+  if (isAuth) {
+    const hasCompletedOnboarding = token?.hasCompletedOnboarding;
+    const isOnboardingPage = pathname.startsWith("/onboarding");
+
+    // If user has completed onboarding and is on onboarding page, redirect to dashboard
+    if (hasCompletedOnboarding && isOnboardingPage) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
+    // If user has NOT completed onboarding and is on a protected page (except onboarding), redirect to onboarding
+    if (!hasCompletedOnboarding && isProtectedRoute && !isOnboardingPage) {
+      return NextResponse.redirect(new URL("/onboarding", req.url));
+    }
+  }
+
   return NextResponse.next();
 }
 

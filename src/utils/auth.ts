@@ -83,14 +83,21 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    jwt: async (payload: any) => {
-      const { token } = payload;
-      const user = payload.user;
+    jwt: async ({ token, user, trigger, session }) => {
+      if (trigger === "update" && session) {
+        return { ...token, ...session.user };
+      }
 
       if (user) {
+        const profile = await prisma.userOnboardingProfile.findUnique({
+          where: { userId: user.id },
+          select: { completed: true },
+        });
+
         return {
           ...token,
           id: user.id,
+          hasCompletedOnboarding: !!profile?.completed,
         };
       }
       return token;
@@ -102,7 +109,8 @@ export const authOptions: NextAuthOptions = {
           ...session,
           user: {
             ...session.user,
-            id: token?.id,
+            id: token.id,
+            hasCompletedOnboarding: token.hasCompletedOnboarding,
           },
         };
       }
