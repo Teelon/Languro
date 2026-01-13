@@ -1,0 +1,64 @@
+{
+  "screen1": {
+    "title": "¿Cuál es tu idioma nativo?",
+    "subtitle": "Selecciona el idioma que mejor hablas"
+  },
+  "screen2": {
+    "title": "¿Qué idioma quieres aprender?",
+    "subtitle": "Elige tu idioma objetivo"
+  },
+  "screen3": {
+    "title": "¿Cuál es tu nivel actual?",
+    "subtitle": "Sé honesto - esto nos ayuda a personalizar tu experiencia",
+    "beginner": "Principiante",
+    "intermediate": "Intermedio",
+    "advanced": "Avanzado"
+  },
+  "screen4": {
+    "title": "¿Por qué estás aprendiendo?",
+    "subtitle": "Selecciona tu motivación principal",
+    "goals": {
+      "travel": "Viajes",
+      "work": "Trabajo",
+      "conversation": "Conversación",
+      "school": "Escuela",
+      "family": "Familia",
+      "other": "Otro"
+    }
+  },
+  "screen5": {
+    "title": "¿Cuánto tiempo puedes dedicar al día?",
+    "subtitle": "Incluso 5 minutos al día hacen la diferencia",
+    "minutes": "min",
+    "hour": "hora"
+  },
+  "screen6": {
+    "title": "¿Cuáles son tus intereses?",
+    "subtitle": "Selecciona al menos 3 temas",
+    "interests": {
+      "music": "Música",
+      "movies": "Películas y Series",
+      "sports": "Deportes",
+      "travel": "Viajes",
+      "food": "Comida y Cocina",
+      "culture": "Cultura e Historia",
+      "business": "Negocios",
+      "technology": "Tecnología",
+      "literature": "Literatura",
+      "art": "Arte y Diseño",
+      "gaming": "Videojuegos",
+      "nature": "Naturaleza"
+    },
+    "minRequired": "Selecciona al menos 3 intereses"
+  },
+  "navigation": {
+    "back": "Atrás",
+    "continue": "Continuar",
+    "finish": "Comenzar"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "es": "Español"
+  }
+}

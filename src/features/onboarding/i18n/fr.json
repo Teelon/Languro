@@ -1,0 +1,64 @@
+{
+  "screen1": {
+    "title": "Quelle est votre langue maternelle ?",
+    "subtitle": "Sélectionnez la langue que vous parlez le mieux"
+  },
+  "screen2": {
+    "title": "Quelle langue voulez-vous apprendre ?",
+    "subtitle": "Choisissez votre langue cible"
+  },
+  "screen3": {
+    "title": "Quel est votre niveau actuel ?",
+    "subtitle": "Soyez honnête - cela nous aide à personnaliser votre expérience",
+    "beginner": "Débutant",
+    "intermediate": "Intermédiaire",
+    "advanced": "Avancé"
+  },
+  "screen4": {
+    "title": "Pourquoi apprenez-vous ?",
+    "subtitle": "Sélectionnez votre motivation principale",
+    "goals": {
+      "travel": "Voyage",
+      "work": "Travail",
+      "conversation": "Conversation",
+      "school": "École",
+      "family": "Famille",
+      "other": "Autre"
+    }
+  },
+  "screen5": {
+    "title": "Combien de temps pouvez-vous consacrer par jour ?",
+    "subtitle": "Même 5 minutes par jour font la différence",
+    "minutes": "min",
+    "hour": "heure"
+  },
+  "screen6": {
+    "title": "Quels sont vos centres d'intérêt ?",
+    "subtitle": "Sélectionnez au moins 3 sujets",
+    "interests": {
+      "music": "Musique",
+      "movies": "Films & Séries",
+      "sports": "Sports",
+      "travel": "Voyage",
+      "food": "Cuisine",
+      "culture": "Culture & Histoire",
+      "business": "Business",
+      "technology": "Technologie",
+      "literature": "Littérature",
+      "art": "Art & Design",
+      "gaming": "Jeux vidéo",
+      "nature": "Nature"
+    },
+    "minRequired": "Sélectionnez au moins 3 centres d'intérêt"
+  },
+  "navigation": {
+    "back": "Retour",
+    "continue": "Continuer",
+    "finish": "Commencer"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "es": "Español"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "screen1": {
+    "title": "What's your native language?",
+    "subtitle": "Select the language you speak best"
+  },
+  "screen2": {
+    "title": "Which language do you want to learn?",
+    "subtitle": "Choose your target language"
+  },
+  "screen3": {
+    "title": "What's your current level?",
+    "subtitle": "Be honest - this helps us personalize your experience",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "advanced": "Advanced"
+  },
+  "screen4": {
+    "title": "Why are you learning?",
+    "subtitle": "Select your main motivation",
+    "goals": {
+      "travel": "Travel",
+      "work": "Work",
+      "conversation": "Conversation",
+      "school": "School",
+      "family": "Family",
+      "other": "Other"
+    }
+  },
+  "screen5": {
+    "title": "How much time can you dedicate daily?",
+    "subtitle": "Even 5 minutes a day makes a difference",
+    "minutes": "min",
+    "hour": "hour"
+  },
+  "screen6": {
+    "title": "What are you interested in?",
+    "subtitle": "Select at least 3 topics",
+    "interests": {
+      "music": "Music",
+      "movies": "Movies & TV",
+      "sports": "Sports",
+      "travel": "Travel",
+      "food": "Food & Cooking",
+      "culture": "Culture & History",
+      "business": "Business",
+      "technology": "Technology",
+      "literature": "Literature",
+      "art": "Art & Design",
+      "gaming": "Gaming",
+      "nature": "Nature"
+    },
+    "minRequired": "Select at least 3 interests"
+  },
+  "navigation": {
+    "back": "Back",
+    "continue": "Continue",
+    "finish": "Get Started"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "es": "Español"
+  }
+}

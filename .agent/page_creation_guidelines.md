@@ -10,7 +10,13 @@ This document outlines the standard process for creating new pages in the Langur
 *   **Structure**: Break down the page into distinct sections (e.g., `Hero.tsx`, `Problem.tsx`, `Features.tsx`).
 *   **Assembly**: The main page file (e.g., `src/app/page.tsx`) should primarily act as a container that imports and stacks these section components.
 
-### 2. Strict Theme Support (Light & Dark)
+### 2. Routing & Middleware (Next.js 16+)
+*   **DO NOT use `middleware.ts`**: The `middleware.ts` file convention is deprecated in Next.js 16.
+*   **Use `proxy.ts` instead**: All authentication, redirects, and route protection logic should be implemented in `src/proxy.ts`.
+*   **Matcher Config**: The `config.matcher` array in `proxy.ts` defines which routes the proxy function runs on.
+*   **Protected Routes**: Add route prefixes to `protectedPrefixes` array in `proxy.ts` for auth-required pages.
+
+### 3. Strict Theme Support (Light & Dark)
 *   **Mandatory Support**: All components **MUST** support both Light and Dark modes from day one.
 *   **Implementation**: Use Tailwind's `dark:` modifier for all color-dependent properties.
     *   **Backgrounds**: `bg-white dark:bg-slate-900` or `bg-slate-50 dark:bg-slate-950`.

@@ -5,17 +5,32 @@ import { getToken } from "next-auth/jwt";
 export async function proxy(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.SECRET });
   const isAuth = !!token;
-  const isAuthPage =
-    req.nextUrl.pathname === "/signin" ||
-    req.nextUrl.pathname === "/signup";
+  const { pathname } = req.nextUrl;
 
-  const isDashboardPage = req.nextUrl.pathname.startsWith("/dashboard");
+  const isAuthPage =
+    pathname === "/signin" ||
+    pathname === "/signup" ||
+    pathname === "/register";
+
+  // List of protected routes pattern or prefixes
+  const protectedPrefixes = [
+    "/dashboard",
+    "/onboarding",
+    "/analytics",
+    "/grammar",
+    "/immersion",
+    "/production",
+    "/settings",
+    "/conjugation-drills"
+  ];
+
+  const isProtectedRoute = protectedPrefixes.some(prefix => pathname.startsWith(prefix));
 
   if (isAuthPage && isAuth) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  if (isDashboardPage && !isAuth) {
+  if (isProtectedRoute && !isAuth) {
     return NextResponse.redirect(new URL("/signin", req.url));
   }
 
@@ -23,5 +38,17 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/signin", "/signup", "/dashboard/:path*"],
+  matcher: [
+    "/signin",
+    "/signup",
+    "/register",
+    "/dashboard/:path*",
+    "/onboarding/:path*",
+    "/analytics/:path*",
+    "/grammar/:path*",
+    "/immersion/:path*",
+    "/production/:path*",
+    "/settings/:path*",
+    "/conjugation-drills/:path*"
+  ],
 };
