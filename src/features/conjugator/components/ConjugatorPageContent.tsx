@@ -5,11 +5,22 @@ import ConjugatorSearch from '@/features/conjugator/components/ConjugatorSearch'
 import ConjugatorResults from '@/features/conjugator/components/ConjugatorResults';
 import { FullConjugationData } from '@/features/conjugator/types';
 
-export default function ConjugatorPageContent() {
+import { cn } from "@/lib/utils";
+
+interface ConjugatorPageContentProps {
+  className?: string;
+  fluid?: boolean;
+}
+
+export default function ConjugatorPageContent({ className, fluid = false }: ConjugatorPageContentProps) {
   const [data, setData] = useState<FullConjugationData | null>(null);
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 pt-24 pb-12 min-h-[calc(100vh-100px)]">
+    <div className={cn(
+      "mx-auto px-4 pt-24 pb-12 min-h-[calc(100vh-100px)]",
+      !fluid && "container max-w-7xl",
+      className
+    )}>
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white sm:text-4xl md:text-[40px]">
           AI Conjugator

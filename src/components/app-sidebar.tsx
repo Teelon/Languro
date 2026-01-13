@@ -4,7 +4,7 @@ import * as React from "react"
 import {
   LayoutDashboardIcon,
   ListIcon,
-  SettingsIcon,
+  User,
   LogOutIcon,
 } from "lucide-react"
 
@@ -30,13 +30,13 @@ const data = {
     },
     {
       title: "Conjugation",
-      url: "/conjugation",
+      url: "/dashboard/conjugation",
       icon: ListIcon,
     },
     {
-      title: "Settings",
-      url: "/settings",
-      icon: SettingsIcon,
+      title: "Account",
+      url: "/account",
+      icon: User,
     },
   ],
 }

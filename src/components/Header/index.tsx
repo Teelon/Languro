@@ -210,6 +210,39 @@ const Header = () => {
                       )
                     )}
                   </ul>
+                  <div className="mt-4 flex flex-col space-y-3 sm:hidden">
+                    {session?.user ? (
+                      <>
+                        <p className="mb-2 text-base font-medium text-slate-900 dark:text-white">
+                          {session?.user?.name}
+                        </p>
+                        <Button
+                          onClick={() => signOut()}
+                          variant="ghost"
+                          className="h-auto justify-start px-0 py-0 text-base font-medium text-slate-900 hover:text-primary dark:text-white dark:hover:text-primary"
+                        >
+                          Sign Out
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          href="/signin"
+                          onClick={navbarToggleHandler}
+                          className="flex py-2 text-base font-medium text-slate-900 hover:text-primary dark:text-white dark:hover:text-primary"
+                        >
+                          Sign In
+                        </Link>
+                        <Link
+                          href="/signup"
+                          onClick={navbarToggleHandler}
+                          className="flex py-2 text-base font-medium text-slate-900 hover:text-primary dark:text-white dark:hover:text-primary"
+                        >
+                          Sign Up
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 </nav>
               </div>
               <div className="hidden items-center justify-end pr-16 sm:flex lg:pr-0 gap-2">
