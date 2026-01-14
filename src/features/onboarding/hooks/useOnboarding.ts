@@ -254,12 +254,18 @@ export function useOnboarding() {
       localStorage.removeItem(STORAGE_KEY);
 
       // Update session to reflect completed onboarding
-      // We don't want this to block the user if it fails
+      // We don't want this to block the user if it fails or hangs
       if (session) {
         try {
-          await update({ user: { hasCompletedOnboarding: true } });
+          // Race the update against a timeout
+          const updatePromise = update({ user: { hasCompletedOnboarding: true } });
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Session update timed out')), 1500)
+          );
+
+          await Promise.race([updatePromise, timeoutPromise]);
         } catch (updateError) {
-          console.error('Failed to update session:', updateError);
+          console.warn('Session update ignored (failed or timed out):', updateError);
           // Continue execution - do not block redirect
         }
       }

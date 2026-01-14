@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { OnboardingProgress } from './OnboardingProgress';
 import { NavigationButtons } from './shared/NavigationButtons';
@@ -34,11 +34,22 @@ export function OnboardingContainer() {
   const handleNext = async () => {
     if (state.currentStep === TOTAL_STEPS) {
       const success = await complete();
+
       if (success) {
-        toast.success("Welcome! You're all set to start learning.");
-        // Force hard reload if router.push hangs (which can happen with session updates)
-        router.push('/dashboard');
-        router.refresh();
+        toast.success("Welcome! You're all set to start learning.", {
+          position: 'top-center',
+          duration: 4000,
+        });
+
+        // Add a small delay so the user can see the toast before redirecting
+        setTimeout(() => {
+          // Force hard reload if router.push hangs (which can happen with session updates)
+          window.location.href = '/dashboard';
+        }, 1500);
+      } else {
+        toast.error('Something went wrong. Please try again.', {
+          position: 'top-center',
+        });
       }
     } else {
       goNext();
