@@ -254,8 +254,14 @@ export function useOnboarding() {
       localStorage.removeItem(STORAGE_KEY);
 
       // Update session to reflect completed onboarding
+      // We don't want this to block the user if it fails
       if (session) {
-        await update({ user: { hasCompletedOnboarding: true } });
+        try {
+          await update({ user: { hasCompletedOnboarding: true } });
+        } catch (updateError) {
+          console.error('Failed to update session:', updateError);
+          // Continue execution - do not block redirect
+        }
       }
 
       setState((prev) => ({ ...prev, isLoading: false }));

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { OnboardingProgress } from './OnboardingProgress';
 import { NavigationButtons } from './shared/NavigationButtons';
@@ -34,7 +35,10 @@ export function OnboardingContainer() {
     if (state.currentStep === TOTAL_STEPS) {
       const success = await complete();
       if (success) {
+        toast.success("Welcome! You're all set to start learning.");
+        // Force hard reload if router.push hangs (which can happen with session updates)
         router.push('/dashboard');
+        router.refresh();
       }
     } else {
       goNext();

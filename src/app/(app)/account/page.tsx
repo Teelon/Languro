@@ -1,21 +1,31 @@
-export default function AccountPage() {
+import { getAccountData } from '@/actions/account';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProfileTab } from '@/features/account/components/profile-tab';
+import { PreferencesTab } from '@/features/account/components/preferences-tab';
+
+export default async function AccountPage() {
+  const user = await getAccountData();
+
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-6">
-        <h1 className="text-2xl font-bold">Account Settings</h1>
-        <p className="text-muted-foreground">Manage your account preferences here.</p>
+      <div className="flex-1 rounded-xl bg-muted/50 md:min-h-min p-6">
+        <h1 className="text-2xl font-bold mb-2">Account Settings</h1>
+        <p className="text-muted-foreground mb-6">Manage your account settings and preferences.</p>
 
-        {/* Placeholder content */}
-        <div className="mt-6 space-y-4">
-          <div className="bg-card w-full p-6 rounded-lg border">
-            <h2 className="text-lg font-semibold">Profile</h2>
-            <div className="mt-4 h-8 bg-muted rounded w-1/3 animate-pulse"></div>
-          </div>
-          <div className="bg-card w-full p-6 rounded-lg border">
-            <h2 className="text-lg font-semibold">Security</h2>
-            <div className="mt-4 h-8 bg-muted rounded w-1/4 animate-pulse"></div>
-          </div>
-        </div>
+        <Tabs defaultValue="profile" className="w-full space-y-6">
+          <TabsList>
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="profile">
+            <ProfileTab user={user} />
+          </TabsContent>
+
+          <TabsContent value="preferences">
+            <PreferencesTab preferences={(user as any).preferences || {}} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

@@ -46,6 +46,51 @@ model User {
   feedback              ConjugationFeedback[]
   onboardingProfile     UserOnboardingProfile?
   onboardingProgress    OnboardingProgress?
+  preferences           UserPreferences?
+}
+
+model UserPreferences {
+  id String @id @default(cuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Privacy & Data
+  shareProgressWithFriends Boolean @default(true)
+  showInSearch             Boolean @default(true)
+  dataSharing              Boolean @default(true)
+  activityVisibility       String  @default("public")
+
+  // Communication Preferences
+  emailDigestFrequency  String  @default("weekly")
+  pushNotificationTime  String?
+  doNotDisturbStart     String?
+  doNotDisturbEnd       String?
+  communicationLanguage String  @default("en")
+
+  // Content & Features
+  newContentAlerts      Boolean @default(true)
+  recommendedLessons    Boolean @default(true)
+  tipsTricks            Boolean @default(true)
+  pronunciationFeedback Boolean @default(true)
+
+  // Social & Community
+  followNotifications   Boolean @default(true)
+  commentNotifications  Boolean @default(true)
+  leaderboardUpdates    Boolean @default(true)
+  friendActivityUpdates Boolean @default(true)
+  studyGroupInvites     Boolean @default(true)
+  motivationalMessages  Boolean @default(true)
+  weeklyProgressReports Boolean @default(true)
+
+  // Security & General
+  marketingEmails Boolean @default(true)
+  newsletter      Boolean @default(true)
+  surveyEmails    Boolean @default(true)
+  securityAlerts  Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+  
+  @@map("user_preferences")
 }
 
 model UserOnboardingProfile {
