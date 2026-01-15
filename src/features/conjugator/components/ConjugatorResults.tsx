@@ -97,27 +97,88 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
 
     // Audio Playback State
     const [playingUrl, setPlayingUrl] = useState<string | null>(null);
+    const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
 
-    const playAudio = (url: string) => {
-        if (playingUrl === url) return; // Already playing this one
+    const playAudio = async (item: { text: string; pronoun: string; audio_url?: string }, tenseName: string) => {
+        // Create a unique key for loading state
+        const audioKey = `${tenseName}-${item.pronoun}-${item.text}`;
 
-        setPlayingUrl(url);
-        const audio = new Audio(url);
+        if (loadingAudio.has(audioKey)) return;
+        if (playingUrl === audioKey) return;
 
-        audio.onended = () => {
-            setPlayingUrl(null);
-        };
+        // If we already have a direct URL (and it's not our loading key), use it? 
+        // NOTE: We prefer hitting our API to get a fresh signed URL.
 
-        audio.onerror = () => {
-            console.error("Audio playback error");
-            setPlayingUrl(null);
-            toast.error("Failed to play audio");
-        };
+        try {
+            setLoadingAudio(prev => new Set(prev).add(audioKey));
+            console.time(`Audio Fetch: ${audioKey}`);
 
-        audio.play().catch(e => {
-            console.error("Play error:", e);
-            setPlayingUrl(null);
-        });
+            // Construct API URL
+            const params = new URLSearchParams({
+                type: 'conjugation',
+                language: data.language,
+                verb: data.infinitive,
+                tense: tenseName,
+                pronoun: item.pronoun,
+                conjugated: item.text
+            });
+
+            const response = await fetch(`/api/audio?${params.toString()}`);
+            if (!response.ok) {
+                throw new Error('Failed to get audio URL');
+            }
+
+            const result = await response.json();
+            if (!result.success || !result.url) {
+                throw new Error(result.error || 'Invalid audio response');
+            }
+
+            console.timeEnd(`Audio Fetch: ${audioKey}`);
+
+            const audio = new Audio(result.url);
+
+            // Wait for audio to be ready to play
+            audio.oncanplaythrough = () => {
+                setLoadingAudio(prev => {
+                    const next = new Set(prev);
+                    next.delete(audioKey);
+                    return next;
+                });
+                setPlayingUrl(audioKey);
+                audio.play().catch(e => {
+                    console.error("Play error:", e);
+                    setPlayingUrl(null);
+                    toast.error("Could not play audio");
+                });
+            };
+
+            audio.onended = () => {
+                setPlayingUrl(null);
+            };
+
+            audio.onerror = () => {
+                console.error("Audio playback error");
+                setLoadingAudio(prev => {
+                    const next = new Set(prev);
+                    next.delete(audioKey);
+                    return next;
+                });
+                setPlayingUrl(null);
+                toast.error("Failed to play audio");
+            };
+
+            // Trigger load
+            audio.load();
+
+        } catch (error) {
+            console.error('Audio Error:', error);
+            toast.error('Failed to load audio');
+            setLoadingAudio(prev => {
+                const next = new Set(prev);
+                next.delete(audioKey);
+                return next;
+            });
+        }
     };
 
     // HITL State
@@ -398,19 +459,22 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                                             >
                                                 <div className="flex w-full items-center gap-2 pr-12">
                                                     {/* Audio Button */}
+                                                    {/* Audio Button */}
                                                     <button
-                                                        onClick={() => item.audio_url && playAudio(item.audio_url)}
-                                                        disabled={!item.has_audio}
-                                                        title={item.has_audio ? "Play Pronunciation" : "Audio generating..."}
+                                                        onClick={() => playAudio(item, tense.tense_name)}
+                                                        disabled={loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`)}
+                                                        title="Play Pronunciation"
                                                         className={`
                                                             flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform
-                                                            ${item.has_audio
-                                                                ? 'bg-primary text-primary-foreground hover:scale-110'
-                                                                : 'cursor-not-allowed bg-muted text-muted-foreground'
+                                                            ${(playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` || loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`))
+                                                                ? 'bg-primary text-primary-foreground'
+                                                                : 'bg-muted text-muted-foreground hover:scale-110 hover:bg-primary/20 hover:text-primary'
                                                             }
                                                         `}
                                                     >
-                                                        {playingUrl === item.audio_url ? (
+                                                        {loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`) ? (
+                                                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                        ) : playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` ? (
                                                             <IconVolume2 size={14} className="animate-pulse" />
                                                         ) : (
                                                             <IconVolume2 size={14} />
