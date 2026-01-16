@@ -99,6 +99,22 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
     // Audio Playback State
     const [playingUrl, setPlayingUrl] = useState<string | null>(null);
     const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
+    const [playbackRate, setPlaybackRate] = useState<number>(1.0);
+
+    useEffect(() => {
+        const storedSpeed = localStorage.getItem('audio_playback_speed');
+        if (storedSpeed) {
+            const speed = parseFloat(storedSpeed);
+            if (!isNaN(speed)) {
+                setPlaybackRate(speed);
+            }
+        }
+    }, []);
+
+    const handleSpeedChange = (speed: number) => {
+        setPlaybackRate(speed);
+        localStorage.setItem('audio_playback_speed', speed.toString());
+    };
 
     const playAudio = async (item: { text: string; pronoun: string; audio_file_key?: string }, tenseName: string) => {
         // Unique key for UI loading state
@@ -189,6 +205,7 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
     const playSound = (url: string, uiKey: string): Promise<void> => {
         return new Promise((resolve) => {
             const audio = new Audio(url);
+            audio.playbackRate = playbackRate;
 
             audio.oncanplaythrough = () => {
                 setLoadingAudio(prev => {
@@ -197,6 +214,10 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                     return next;
                 });
                 setPlayingUrl(uiKey);
+
+                // Ensure playback rate is applied right before playing
+                audio.playbackRate = playbackRate;
+
                 audio.play().catch(e => {
                     console.error("Play error:", e);
                     setPlayingUrl(null);
@@ -500,28 +521,56 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                                                     {/* Audio Button */}
                                                     {/* Audio Button */}
                                                     {/* Audio Button */}
-                                                    <button
-                                                        onClick={() => playAudio(item, tense.tense_name)}
-                                                        disabled={!item.has_audio}
-                                                        title={item.has_audio ? "Play Pronunciation" : "Audio not available"}
-                                                        className={`
-                                                            flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform
-                                                            ${(playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` || loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`))
-                                                                ? 'bg-[#0099FF] text-white'
-                                                                : item.has_audio
-                                                                    ? 'bg-[#0099FF]/10 text-[#0099FF] hover:scale-110 hover:bg-[#0099FF] hover:text-white dark:bg-[#0099FF]/20 dark:text-[#0099FF] dark:hover:text-white'
-                                                                    : 'cursor-not-allowed bg-muted text-muted-foreground opacity-50'
-                                                            }
-                                                        `}
-                                                    >
-                                                        {loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`) ? (
-                                                            <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                                        ) : playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` ? (
-                                                            <IconVolume2 size={14} className="animate-pulse" />
-                                                        ) : (
-                                                            <IconVolume2 size={14} />
+                                                    <div className="group/speed relative flex items-center">
+                                                        <button
+                                                            onClick={() => playAudio(item, tense.tense_name)}
+                                                            disabled={!item.has_audio}
+                                                            title={item.has_audio ? `Play Pronunciation (${playbackRate}x)` : "Audio not available"}
+                                                            className={`
+                                                                flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform
+                                                                ${(playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` || loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`))
+                                                                    ? 'bg-[#0099FF] text-white'
+                                                                    : item.has_audio
+                                                                        ? 'bg-[#0099FF]/10 text-[#0099FF] hover:scale-110 hover:bg-[#0099FF] hover:text-white dark:bg-[#0099FF]/20 dark:text-[#0099FF] dark:hover:text-white'
+                                                                        : 'cursor-not-allowed bg-muted text-muted-foreground opacity-50'
+                                                                }
+                                                            `}
+                                                        >
+                                                            {loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`) ? (
+                                                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                            ) : playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` ? (
+                                                                <IconVolume2 size={14} className="animate-pulse" />
+                                                            ) : (
+                                                                <IconVolume2 size={14} />
+                                                            )}
+                                                        </button>
+
+                                                        {/* Speed Control Popup */}
+                                                        {item.has_audio && (
+                                                            <div className="absolute left-full lg:left-auto lg:bottom-full lg:left-1/2 lg:-translate-x-1/2 z-50 invisible opacity-0 group-hover/speed:visible group-hover/speed:opacity-100 transition-all duration-200 group-hover/speed:delay-[1500ms] pl-2 lg:pl-0 lg:pb-2">
+                                                                <div className="flex flex-col lg:flex-row gap-1 bg-white dark:bg-slate-800 p-1 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700">
+                                                                    {[0.5, 0.75, 1, 1.25, 1.5].map((speed) => (
+                                                                        <button
+                                                                            key={speed}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleSpeedChange(speed);
+                                                                            }}
+                                                                            className={`
+                                                                                px-2 py-0.5 text-xs font-medium rounded transition-colors
+                                                                                ${playbackRate === speed
+                                                                                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                                                                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700'
+                                                                                }
+                                                                            `}
+                                                                        >
+                                                                            {speed}x
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
                                                         )}
-                                                    </button>
+                                                    </div>
 
                                                     <div className="leading-tight">
                                                         <span className="mr-2 inline-block text-sm font-medium text-muted-foreground">
