@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import FeedbackModal from './FeedbackModal';
 import { useSession } from 'next-auth/react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { audioCache } from '@/lib/audio-cache';
 
 // Simple Icon Components
 const IconVolume2 = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
@@ -100,56 +101,102 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
     const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
 
     const playAudio = async (item: { text: string; pronoun: string; audio_file_key?: string }, tenseName: string) => {
-        // Create a unique key for loading state
-        const audioKey = `${tenseName}-${item.pronoun}-${item.text}`;
+        // Unique key for UI loading state
+        const uiKey = `${tenseName}-${item.pronoun}-${item.text}`;
 
-        if (loadingAudio.has(audioKey)) return;
-        if (playingUrl === audioKey) return;
+        // Unique key for Caching (prefer database key)
+        const cacheKey = item.audio_file_key || `${data.language}-${data.infinitive}-${tenseName}-${item.pronoun}-${item.text}`;
+
+        if (loadingAudio.has(uiKey)) return;
+        if (playingUrl === uiKey) return;
 
         try {
-            setLoadingAudio(prev => new Set(prev).add(audioKey));
-            console.time(`Audio Fetch: ${audioKey}`);
+            // 1. Check Audio Blob Cache
+            const cachedBlobUrl = await audioCache.getAudioBlob(cacheKey);
+            if (cachedBlobUrl) {
+                console.log(`[playAudio] Cache Hit (Blob): ${cacheKey}`);
+                await playSound(cachedBlobUrl, uiKey);
+                return;
+            }
 
-            // Construct API URL
-            const params = new URLSearchParams();
+            setLoadingAudio(prev => new Set(prev).add(uiKey));
+            console.time(`Audio Flow: ${uiKey}`);
 
-            if (item.audio_file_key) {
-                // Use direct R2 key if available (preferred)
-                console.log(`[playAudio] Using DB Key: ${item.audio_file_key}`);
-                params.append('key', item.audio_file_key);
+            // 2. Check Signed URL Cache or Fetch New
+            let signedUrl = await audioCache.getSignedUrl(cacheKey);
+
+            if (!signedUrl) {
+                console.log(`[playAudio] Fetching new signed URL`);
+                // Construct API URL
+                const params = new URLSearchParams();
+
+                if (item.audio_file_key) {
+                    params.append('key', item.audio_file_key);
+                } else {
+                    params.set('type', 'conjugation');
+                    params.set('language', data.language);
+                    params.set('verb', data.infinitive);
+                    params.set('tense', tenseName);
+                    params.set('pronoun', item.pronoun);
+                    params.set('conjugated', item.text);
+                }
+
+                const response = await fetch(`/api/audio?${params.toString()}`);
+                if (!response.ok) throw new Error('Failed to get audio URL');
+
+                const result = await response.json();
+                if (!result.success || !result.url) throw new Error(result.error || 'Invalid audio response');
+
+                signedUrl = result.url;
+                await audioCache.setSignedUrl(cacheKey, signedUrl!);
             } else {
-                console.log(`[playAudio] key not found, constructing params`);
-                // Fallback to building key dynamically
-                params.set('type', 'conjugation');
-                params.set('language', data.language);
-                params.set('verb', data.infinitive);
-                params.set('tense', tenseName);
-                params.set('pronoun', item.pronoun);
-                params.set('conjugated', item.text);
+                console.log(`[playAudio] Cache Hit (Signed URL): ${cacheKey}`);
             }
 
-            const response = await fetch(`/api/audio?${params.toString()}`);
-            if (!response.ok) {
-                throw new Error('Failed to get audio URL');
+            // 3. Fetch Audio Blob from Signed URL
+            let playUrl = signedUrl!;
+
+            try {
+                const audioResponse = await fetch(signedUrl!);
+                if (audioResponse.ok) {
+                    const blob = await audioResponse.blob();
+                    playUrl = await audioCache.setAudioBlob(cacheKey, blob);
+                } else {
+                    console.warn(`[playAudio] Blob fetch failed (${audioResponse.status}), falling back to direct URL`);
+                }
+            } catch (fetchError) {
+                console.warn(`[playAudio] Blob fetch error (likely CORS), falling back to direct URL`, fetchError);
+                // Fallback to signedUrl (playUrl is already signedUrl)
             }
 
-            const result = await response.json();
-            if (!result.success || !result.url) {
-                throw new Error(result.error || 'Invalid audio response');
-            }
+            console.timeEnd(`Audio Flow: ${uiKey}`);
 
-            console.timeEnd(`Audio Fetch: ${audioKey}`);
+            // 4. Play
+            await playSound(playUrl, uiKey);
 
-            const audio = new Audio(result.url);
+        } catch (error) {
+            console.error('Audio Error:', error);
+            toast.error('Failed to load audio');
+        } finally {
+            setLoadingAudio(prev => {
+                const next = new Set(prev);
+                next.delete(uiKey);
+                return next;
+            });
+        }
+    };
 
-            // Wait for audio to be ready to play
+    const playSound = (url: string, uiKey: string): Promise<void> => {
+        return new Promise((resolve) => {
+            const audio = new Audio(url);
+
             audio.oncanplaythrough = () => {
                 setLoadingAudio(prev => {
                     const next = new Set(prev);
-                    next.delete(audioKey);
+                    next.delete(uiKey);
                     return next;
                 });
-                setPlayingUrl(audioKey);
+                setPlayingUrl(uiKey);
                 audio.play().catch(e => {
                     console.error("Play error:", e);
                     setPlayingUrl(null);
@@ -159,31 +206,18 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
 
             audio.onended = () => {
                 setPlayingUrl(null);
+                resolve();
             };
 
             audio.onerror = () => {
                 console.error("Audio playback error");
-                setLoadingAudio(prev => {
-                    const next = new Set(prev);
-                    next.delete(audioKey);
-                    return next;
-                });
                 setPlayingUrl(null);
                 toast.error("Failed to play audio");
+                resolve(); // Resolve anyway to clear loading state if wrapped
             };
 
-            // Trigger load
             audio.load();
-
-        } catch (error) {
-            console.error('Audio Error:', error);
-            toast.error('Failed to load audio');
-            setLoadingAudio(prev => {
-                const next = new Set(prev);
-                next.delete(audioKey);
-                return next;
-            });
-        }
+        });
     };
 
     // HITL State
