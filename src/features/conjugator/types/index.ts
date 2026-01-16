@@ -77,7 +77,8 @@ export interface FullConjugationData {
             pronoun_id?: number; // Internal use
             tense_id?: number;   // Internal use
             has_audio?: boolean; // From DB
-            audio_url?: string;  // Generated URL
+            audio_url?: string;  // Generated URL (legacy/direct)
+            audio_file_key?: string; // R2 Key from DB
 
             // HITL
             conjugation_id?: number;

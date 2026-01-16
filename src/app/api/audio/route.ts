@@ -71,43 +71,55 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
-    // Get audio type (required)
-    const type = searchParams.get('type') as AudioType;
+    // Check if direct key is provided
+    const directKey = searchParams.get('key');
+    let key: string;
+    let type: AudioType | undefined;
 
-    if (!type) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing required parameter: type',
-          validTypes: AUDIO_TYPES,
-        },
-        { status: 400 }
-      );
-    }
+    if (directKey) {
+      // Basic sanitization
+      key = directKey.startsWith('/') ? directKey.slice(1) : directKey;
+      console.log(`[Audio API] Using direct key: ${key}`);
+    } else {
+      // Get audio type (required if key not provided)
+      type = searchParams.get('type') as AudioType;
 
-    if (!AUDIO_TYPES.includes(type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid type: ${type}`,
-          validTypes: AUDIO_TYPES,
-        },
-        { status: 400 }
-      );
-    }
-
-    // Collect all other params
-    const params: Record<string, string> = {};
-    searchParams.forEach((value, key) => {
-      if (key !== 'type') {
-        params[key] = value;
+      if (!type) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Missing required parameter: type or key',
+            validTypes: AUDIO_TYPES,
+          },
+          { status: 400 }
+        );
       }
-    });
 
-    // Build R2 key based on type
-    const key = buildAudioKey(type, params);
+      if (!AUDIO_TYPES.includes(type)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Invalid type: ${type}`,
+            validTypes: AUDIO_TYPES,
+          },
+          { status: 400 }
+        );
+      }
 
-    console.log(`[Audio API] Type: ${type}, Key: ${key}`);
+      // Collect all other params
+      const params: Record<string, string> = {};
+      searchParams.forEach((value, key) => {
+        if (key !== 'type') {
+          params[key] = value;
+        }
+      });
+
+      // Build R2 key based on type
+      key = buildAudioKey(type, params);
+      console.log(`[Audio API] Generated key from params: ${type} -> ${key}`);
+    }
+
+    console.log(`[Audio API] Type: ${type || 'direct_key'}, Key: ${key}`);
 
     // Generate signed URL
     const command = new GetObjectCommand({
@@ -123,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      type,
+      type: type || 'direct_key',
       url: signedUrl,
       key,
       expiresIn: 1800,

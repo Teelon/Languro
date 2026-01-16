@@ -440,14 +440,9 @@ export async function getExistingConjugations(
                 ending: c.ending_part,
                 pronoun_id: c.pronoun_id,
                 tense_id: c.tense_id,
-                has_audio: c.has_audio,
-                // Assuming audio is still on Supabase Storage? 
-                // We don't have direct access here easily without Supabase client. 
-                // If needed, we can construct the URL if we know the bucket base URL.
-                // For now, leaving undefined or constructing manually if bucket is known.
-                audio_url: c.audio_file_key
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/audio/${c.audio_file_key}`
-                    : undefined,
+                has_audio: c.has_audio || false,
+                audio_file_key: c.audio_file_key || undefined,
+                audio_url: undefined, // We generate dynamic signed URLs now
                 conjugation_id: c.id,
                 vote_score: c.vote_score || 0
             });

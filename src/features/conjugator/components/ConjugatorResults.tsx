@@ -99,29 +99,34 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
     const [playingUrl, setPlayingUrl] = useState<string | null>(null);
     const [loadingAudio, setLoadingAudio] = useState<Set<string>>(new Set());
 
-    const playAudio = async (item: { text: string; pronoun: string; audio_url?: string }, tenseName: string) => {
+    const playAudio = async (item: { text: string; pronoun: string; audio_file_key?: string }, tenseName: string) => {
         // Create a unique key for loading state
         const audioKey = `${tenseName}-${item.pronoun}-${item.text}`;
 
         if (loadingAudio.has(audioKey)) return;
         if (playingUrl === audioKey) return;
 
-        // If we already have a direct URL (and it's not our loading key), use it? 
-        // NOTE: We prefer hitting our API to get a fresh signed URL.
-
         try {
             setLoadingAudio(prev => new Set(prev).add(audioKey));
             console.time(`Audio Fetch: ${audioKey}`);
 
             // Construct API URL
-            const params = new URLSearchParams({
-                type: 'conjugation',
-                language: data.language,
-                verb: data.infinitive,
-                tense: tenseName,
-                pronoun: item.pronoun,
-                conjugated: item.text
-            });
+            const params = new URLSearchParams();
+
+            if (item.audio_file_key) {
+                // Use direct R2 key if available (preferred)
+                console.log(`[playAudio] Using DB Key: ${item.audio_file_key}`);
+                params.append('key', item.audio_file_key);
+            } else {
+                console.log(`[playAudio] key not found, constructing params`);
+                // Fallback to building key dynamically
+                params.set('type', 'conjugation');
+                params.set('language', data.language);
+                params.set('verb', data.infinitive);
+                params.set('tense', tenseName);
+                params.set('pronoun', item.pronoun);
+                params.set('conjugated', item.text);
+            }
 
             const response = await fetch(`/api/audio?${params.toString()}`);
             if (!response.ok) {
@@ -460,15 +465,18 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                                                 <div className="flex w-full items-center gap-2 pr-12">
                                                     {/* Audio Button */}
                                                     {/* Audio Button */}
+                                                    {/* Audio Button */}
                                                     <button
                                                         onClick={() => playAudio(item, tense.tense_name)}
-                                                        disabled={loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`)}
-                                                        title="Play Pronunciation"
+                                                        disabled={!item.has_audio}
+                                                        title={item.has_audio ? "Play Pronunciation" : "Audio not available"}
                                                         className={`
                                                             flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform
                                                             ${(playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` || loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`))
                                                                 ? 'bg-primary text-primary-foreground'
-                                                                : 'bg-muted text-muted-foreground hover:scale-110 hover:bg-primary/20 hover:text-primary'
+                                                                : item.has_audio
+                                                                    ? 'bg-primary/10 text-primary hover:scale-110 hover:bg-primary hover:text-primary-foreground dark:bg-primary/20 dark:text-primary-foreground'
+                                                                    : 'cursor-not-allowed bg-muted text-muted-foreground opacity-50'
                                                             }
                                                         `}
                                                     >
