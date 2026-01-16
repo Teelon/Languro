@@ -507,9 +507,9 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                                                         className={`
                                                             flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-transform
                                                             ${(playingUrl === `${tense.tense_name}-${item.pronoun}-${item.text}` || loadingAudio.has(`${tense.tense_name}-${item.pronoun}-${item.text}`))
-                                                                ? 'bg-primary text-primary-foreground'
+                                                                ? 'bg-[#0099FF] text-white'
                                                                 : item.has_audio
-                                                                    ? 'bg-primary/10 text-primary hover:scale-110 hover:bg-primary hover:text-primary-foreground dark:bg-primary/20 dark:text-primary-foreground'
+                                                                    ? 'bg-[#0099FF]/10 text-[#0099FF] hover:scale-110 hover:bg-[#0099FF] hover:text-white dark:bg-[#0099FF]/20 dark:text-[#0099FF] dark:hover:text-white'
                                                                     : 'cursor-not-allowed bg-muted text-muted-foreground opacity-50'
                                                             }
                                                         `}
