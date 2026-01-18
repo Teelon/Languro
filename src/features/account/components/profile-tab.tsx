@@ -119,7 +119,7 @@ export function ProfileTab({ user }: ProfileTabProps) {
             </Label>
             <Select
               name="nativeLanguage"
-              defaultValue={user.onboardingProfile?.nativeLanguage}
+              defaultValue={user.onboardingProfile?.nativeLanguage?.iso_code}
               onValueChange={handleSelectChange}
             >
               <SelectTrigger className="h-9 bg-background/50 hover:bg-background hover:border-primary/50 transition-all text-sm">
@@ -141,7 +141,7 @@ export function ProfileTab({ user }: ProfileTabProps) {
             </Label>
             <Select
               name="targetLanguage"
-              defaultValue={user.onboardingProfile?.targetLanguage}
+              defaultValue={user.onboardingProfile?.targetLanguage?.iso_code}
               onValueChange={handleSelectChange}
             >
               <SelectTrigger className="h-9 bg-background/50 hover:bg-background hover:border-primary/50 transition-all text-sm">

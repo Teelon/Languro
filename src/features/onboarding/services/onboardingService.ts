@@ -41,17 +41,23 @@ export async function createOnboardingProfile(
     where: { userId },
   });
 
+  const { nativeLanguage, targetLanguage, ...rest } = data;
+
   // Create or update profile
   return prisma.userOnboardingProfile.upsert({
     where: { userId },
     update: {
-      ...data,
+      ...rest,
+      nativeLanguage: { connect: { iso_code: nativeLanguage } },
+      targetLanguage: { connect: { iso_code: targetLanguage } },
       completed: true,
       updatedAt: new Date(),
     },
     create: {
-      userId,
-      ...data,
+      user: { connect: { id: userId } },
+      ...rest,
+      nativeLanguage: { connect: { iso_code: nativeLanguage } },
+      targetLanguage: { connect: { iso_code: targetLanguage } },
       completed: true,
     },
   });

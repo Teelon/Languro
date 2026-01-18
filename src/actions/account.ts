@@ -14,7 +14,12 @@ export async function getAccountData() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
-      onboardingProfile: true,
+      onboardingProfile: {
+        include: {
+          nativeLanguage: true,
+          targetLanguage: true,
+        }
+      },
       preferences: true,
     } as any, // Cast to any to avoid stale type errors
   });
@@ -52,16 +57,16 @@ export async function updateProfile(formData: FormData) {
       onboardingProfile: {
         upsert: {
           create: {
-            nativeLanguage,
-            targetLanguage,
+            nativeLanguage: { connect: { iso_code: nativeLanguage } },
+            targetLanguage: { connect: { iso_code: targetLanguage } },
             cefrLevel,
             learningGoal,
             interests,
             dailyCommitment: 15, // Default or fetch from form
           },
           update: {
-            nativeLanguage,
-            targetLanguage,
+            nativeLanguage: { connect: { iso_code: nativeLanguage } },
+            targetLanguage: { connect: { iso_code: targetLanguage } },
             cefrLevel,
             learningGoal,
             interests,

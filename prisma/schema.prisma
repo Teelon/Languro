@@ -33,13 +33,13 @@ model Session {
 }
 
 model User {
-  id                    String    @id @default(cuid())
+  id                    String                 @id @default(cuid())
   name                  String?
-  email                 String?   @unique
+  email                 String?                @unique
   emailVerified         DateTime?
   image                 String?
   password              String?
-  passwordResetToken    String?   @unique
+  passwordResetToken    String?                @unique
   passwordResetTokenExp DateTime?
   accounts              Account[]
   sessions              Session[]
@@ -47,12 +47,17 @@ model User {
   onboardingProfile     UserOnboardingProfile?
   onboardingProgress    OnboardingProgress?
   preferences           UserPreferences?
+
+  // Learning system relations
+  userLists      UserList[]
+  masteryRecords Mastery[]
+  drillAttempts  Attempt[]
 }
 
 model UserPreferences {
-  id String @id @default(cuid())
+  id     String @id @default(cuid())
   userId String @unique
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Privacy & Data
   shareProgressWithFriends Boolean @default(true)
@@ -89,23 +94,26 @@ model UserPreferences {
   securityAlerts  Boolean @default(true)
 
   updatedAt DateTime @updatedAt
-  
+
   @@map("user_preferences")
 }
 
 model UserOnboardingProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  nativeLanguage  String   @db.VarChar(5)
-  targetLanguage  String   @db.VarChar(5)
-  cefrLevel       String   @db.VarChar(5)
-  learningGoal    String[]
-  dailyCommitment Int
-  interests       String[]
-  completed       Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  nativeLanguageId Int
+  targetLanguageId Int
+  cefrLevel        String   @db.VarChar(2)
+  learningGoal     String[]
+  dailyCommitment  Int
+  interests        String[]
+  completed        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nativeLanguage Language @relation("NativeLanguage", fields: [nativeLanguageId], references: [id])
+  targetLanguage Language @relation("TargetLanguage", fields: [targetLanguageId], references: [id])
 
   @@map("user_onboarding_profile")
 }
@@ -131,12 +139,17 @@ model VerificationToken {
 }
 
 model Language {
-  id                Int               @id @default(autoincrement())
-  name              String            @db.VarChar(50)
-  iso_code          String            @unique @db.VarChar(5)
-  pronouns          Pronoun[]
-  tenses            Tense[]
-  verb_translations VerbTranslation[]
+  id                  Int                     @id @default(autoincrement())
+  name                String                  @db.VarChar(50)
+  iso_code            String                  @unique @db.VarChar(5)
+  pronouns            Pronoun[]
+  tenses              Tense[]
+  verb_translations   VerbTranslation[]
+  contentItems        ContentItem[]
+  userLists           UserList[]
+  templatePacks       TemplatePack[]
+  nativeLanguageUsers UserOnboardingProfile[] @relation("NativeLanguage")
+  targetLanguageUsers UserOnboardingProfile[] @relation("TargetLanguage")
 
   @@map("languages")
 }
@@ -175,6 +188,7 @@ model VerbTranslation {
   language_id  Int
   word         String        @db.VarChar(100)
   conjugations Conjugation[]
+  contentItems ContentItem[]
   concept      VerbConcept?  @relation(fields: [concept_id], references: [id], onDelete: Cascade)
   language     Language      @relation(fields: [language_id], references: [id], onDelete: Cascade)
 
@@ -226,7 +240,7 @@ model ConjugationFeedback {
   vote_type      FeedbackVoteType
   reason         String?
   ip_hash        String?          @db.VarChar(64)
-  user_id        String?          // Link to User
+  user_id        String? // Link to User
   status         FeedbackStatus?  @default(pending)
   created_at     DateTime?        @default(now())
   conjugation    Conjugation?     @relation(fields: [conjugation_id], references: [id], onDelete: Cascade)
@@ -249,4 +263,170 @@ enum FeedbackStatus {
   ignored
 
   @@map("feedback_status")
+}
+
+// ============================================
+// NEW: LEARNING SYSTEM TABLES
+// ============================================
+
+model ContentItem {
+  id                String   @id @default(cuid())
+  languageId        Int
+  contentType       String
+  verbTranslationId Int?
+  data              Json?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+
+  language          Language           @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  verbTranslation   VerbTranslation?   @relation(fields: [verbTranslationId], references: [id], onDelete: Cascade)
+  drillItems        DrillItem[]
+  userListItems     UserListItem[]
+  templatePackItems TemplatePackItem[]
+
+  @@unique([languageId, contentType, verbTranslationId])
+  @@index([contentType, languageId])
+  @@index([languageId])
+  @@index([verbTranslationId])
+  @@map("content_items")
+}
+
+model DrillItem {
+  id             String @id @default(cuid())
+  contentItemId  String
+  drillType      String
+  promptTemplate Json
+  validationRule Json
+  metadata       Json?
+
+  contentItem    ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  masteryRecords Mastery[]
+  attempts       Attempt[]
+
+  @@index([contentItemId, drillType])
+  @@index([drillType])
+  @@map("drill_items")
+}
+
+model UserList {
+  id          String    @id @default(cuid())
+  userId      String
+  languageId  Int
+  name        String    @db.VarChar(255)
+  description String?
+  isActive    Boolean   @default(true)
+  isArchived  Boolean   @default(false)
+  archivedAt  DateTime?
+  sortOrder   Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language Language       @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  items    UserListItem[]
+
+  @@index([userId, languageId, isActive])
+  @@map("user_lists")
+}
+
+model UserListItem {
+  id            String @id @default(cuid())
+  listId        String
+  contentItemId String
+
+  addedAt   DateTime @default(now())
+  sortOrder Int?
+  notes     String?
+
+  list        UserList    @relation(fields: [listId], references: [id], onDelete: Cascade)
+  contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, contentItemId])
+  @@index([listId])
+  @@map("user_list_items")
+}
+
+model Mastery {
+  id              String    @id @default(cuid())
+  userId          String
+  drillItemId     String
+  score           Int       @default(0)
+  correctStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  seenCount       Int       @default(0)
+  correctCount    Int       @default(0)
+  currentInterval Int?
+  nextReviewAt    DateTime?
+  lastAttemptAt   DateTime?
+  stage           String    @default("new")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drillItem DrillItem @relation(fields: [drillItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, drillItemId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, score])
+  @@index([userId, stage])
+  @@index([userId, nextReviewAt, stage])
+  @@map("mastery")
+}
+
+model Attempt {
+  id               String   @id @default(cuid())
+  userId           String
+  drillItemId      String
+  sessionId        String?
+  userInput        String?
+  selectedOptionId String?
+  isCorrect        Boolean
+  errorType        String?
+  errorDetails     Json?
+  timeSpentMs      Int?
+  hintsUsed        Int      @default(0)
+  promptData       Json?
+  attemptedAt      DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drillItem DrillItem @relation(fields: [drillItemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, attemptedAt])
+  @@index([drillItemId])
+  @@index([userId, isCorrect, attemptedAt])
+  @@index([sessionId])
+  @@map("attempts")
+}
+
+model TemplatePack {
+  id         String @id @default(cuid())
+  languageId Int // Foreign key to Language table
+
+  name        String  @db.VarChar(255)
+  description String?
+  category    String // 'verbs', 'vocabulary', 'phrases', 'mixed'
+  cefrLevel   String  @db.VarChar(2) // 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'
+  isPublic    Boolean @default(true)
+  sortOrder   Int?
+
+  createdAt DateTime @default(now())
+
+  language Language           @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  items    TemplatePackItem[]
+
+  @@index([languageId, category, cefrLevel])
+  @@map("template_packs")
+}
+
+model TemplatePackItem {
+  id            String @id @default(cuid())
+  packId        String
+  contentItemId String
+  sortOrder     Int
+
+  pack        TemplatePack @relation(fields: [packId], references: [id], onDelete: Cascade)
+  contentItem ContentItem  @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([packId, sortOrder])
+  @@map("template_pack_items")
 }
