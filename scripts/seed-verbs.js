@@ -30,10 +30,8 @@ const VERBS = {
     'connaître', 'retourner', 'écrire', 'remplir', 'appeler', 'comprendre', 'finir', 'recevoir', 'mourir', 'manger',
     'commencer', 'suivre', 'porter', 'jouer', 'construire', 'tomber', 'sentir', 'rire', 'regarder', 'monter',
     'marcher', 'entrer', 'gagner', 'ouvrir', 'répondre', 'écouter', 'perdre', 'laisser', 'apprendre', 'revenir',
-    'penser', 'compter', 'devenir', 'travailler', 'sembler', 'manquer', 'supposer', 'agir', 'noter', 'exister',
-    'considérer', 'sembler', 'reconnaître', 'demander', 'sembler', 'décider', 'sembler', 'sembler', 'sembler', 'sembler',
-    'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler',
-    'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler', 'sembler'
+    'penser', 'compter', 'devenir', 'travailler', 'manquer', 'supposer', 'agir', 'noter', 'exister',
+    'considérer', 'sembler', 'reconnaître', 'demander', 'décider'
   ]
 };
 

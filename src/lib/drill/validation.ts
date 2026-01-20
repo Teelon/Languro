@@ -1,5 +1,5 @@
 
-import { prisma } from '../../src/utils/prismaDB';
+import { prisma } from '@/utils/prismaDB';
 
 export interface ValidationResult {
   isCorrect: boolean;
@@ -144,7 +144,7 @@ async function classifyError(
     }
   }
 
-  // 3. Spelling close (Levenshtein distance ≤ 2)
+  // 3. Spelling close (Levenshtein distance <= 2)
   const distance = levenshtein(userInput, expected);
   if (distance <= 2) {
     return 'SPELLING_CLOSE';

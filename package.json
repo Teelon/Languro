@@ -15,7 +15,8 @@
     "generate:smart-packs": "tsx scripts/generate-smart-packs.ts",
     "verify:packs": "tsx scripts/verify-template-packs.ts",
     "generate:drills:dry": "cross-env DRILL_DRY_RUN=true tsx scripts/generate-drill-items.ts",
-    "test:validation": "tsx scripts/test-validation.ts"
+    "test:validation": "tsx scripts/test-validation.ts",
+    "test:drill-engine": "tsx scripts/test-drill-engine.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.5.0",
