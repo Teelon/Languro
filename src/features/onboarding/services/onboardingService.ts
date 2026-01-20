@@ -70,3 +70,76 @@ export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
   });
   return profile?.completed ?? false;
 }
+
+export async function autoCreateStarterList(
+  userId: string,
+  targetLanguageCode: string,
+  cefrLevel: string
+) {
+  const language = await prisma.language.findUnique({
+    where: { iso_code: targetLanguageCode },
+  });
+
+  if (!language) return null;
+
+  // Find appropriate template pack
+  const templatePack = await prisma.templatePack.findFirst({
+    where: {
+      languageId: language.id,
+      cefrLevel,
+      category: 'verbs',
+      isPublic: true,
+    },
+    include: {
+      items: {
+        orderBy: { sortOrder: 'asc' },
+      },
+    },
+    orderBy: {
+      sortOrder: 'asc',
+    },
+  });
+
+  if (!templatePack || templatePack.items.length === 0) {
+    return null;
+  }
+
+  // Check if user already has this list
+  const existingList = await prisma.userList.findFirst({
+    where: {
+      userId,
+      languageId: language.id,
+      name: { contains: templatePack.name }, // Simple loose check
+    },
+  });
+
+  if (existingList) {
+    return existingList;
+  }
+
+  const userList = await prisma.userList.create({
+    data: {
+      userId,
+      languageId: language.id,
+      name: `${templatePack.name}`,
+      description: templatePack.description || `Starter pack for ${cefrLevel}`,
+      isActive: true,
+    },
+  });
+
+  // Add all items
+  if (templatePack.items.length > 0) {
+    await prisma.userListItem.createMany({
+      data: templatePack.items.map((item, index) => ({
+        listId: userList.id,
+        contentItemId: item.contentItemId,
+        sortOrder: index,
+      })),
+    });
+  }
+
+  return {
+    ...userList,
+    verbCount: templatePack.items.length,
+  };
+}

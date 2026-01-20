@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/utils/auth';
-import { createOnboardingProfile } from '@/features/onboarding/services/onboardingService';
+import { createOnboardingProfile, autoCreateStarterList } from '@/features/onboarding/services/onboardingService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+
     const profile = await createOnboardingProfile(session.user.id, {
       nativeLanguage,
       targetLanguage,
@@ -54,7 +55,14 @@ export async function POST(request: NextRequest) {
       interests,
     });
 
-    return NextResponse.json({ profile, success: true });
+    // Auto-create starter list
+    const starterList = await autoCreateStarterList(
+      session.user.id,
+      targetLanguage,
+      cefrLevel
+    );
+
+    return NextResponse.json({ profile, starterList, success: true });
   } catch (error) {
     console.error('Error completing onboarding:', error);
     return NextResponse.json(
