@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate:verbs": "tsx scripts/migrate-verbs-to-content.ts",
+    "migrate:verbs:dry": "cross-env MIGRATION_DRY_RUN=true tsx scripts/migrate-verbs-to-content.ts",
+    "migrate:verbs:rules-only": "cross-env MIGRATION_USE_LLM=false tsx scripts/migrate-verbs-to-content.ts",
+    "generate:drills": "tsx scripts/generate-drill-items.ts",
+    "generate:drills:dry": "cross-env DRILL_DRY_RUN=true tsx scripts/generate-drill-items.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.5.0",
@@ -62,6 +67,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/bcrypt": "^5.0.2",
@@ -71,11 +77,13 @@
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.2",
     "autoprefixer": "^10.0.1",
+    "cross-env": "^10.1.0",
     "eslint": "^8",
     "eslint-config-next": "15.1.6",
     "postcss": "^8",
     "shadcn": "^3.6.3",
     "tailwindcss": "^4.1.17",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "engines": {
