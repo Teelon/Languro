@@ -11,7 +11,8 @@
     "migrate:verbs:dry": "cross-env MIGRATION_DRY_RUN=true tsx scripts/migrate-verbs-to-content.ts",
     "migrate:verbs:rules-only": "cross-env MIGRATION_USE_LLM=false tsx scripts/migrate-verbs-to-content.ts",
     "generate:drills": "tsx scripts/generate-drill-items.ts",
-    "generate:drills:dry": "cross-env DRILL_DRY_RUN=true tsx scripts/generate-drill-items.ts"
+    "generate:drills:dry": "cross-env DRILL_DRY_RUN=true tsx scripts/generate-drill-items.ts",
+    "test:validation": "tsx scripts/test-validation.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.5.0",
