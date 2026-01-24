@@ -350,7 +350,7 @@ model Mastery {
   id              String    @id @default(cuid())
   userId          String
   drillItemId     String
-  score           Int       @default(0)
+  score           Float     @default(0)
   correctStreak   Int       @default(0)
   longestStreak   Int       @default(0)
   seenCount       Int       @default(0)

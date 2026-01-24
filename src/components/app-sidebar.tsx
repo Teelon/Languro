@@ -6,6 +6,7 @@ import {
   ListIcon,
   User,
   LogOutIcon,
+  Dumbbell,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -37,6 +38,11 @@ const data = {
       title: "Account",
       url: "/account",
       icon: User,
+    },
+    {
+      title: "Drills",
+      url: "/conjugation-drills",
+      icon: Dumbbell,
     },
   ],
 }

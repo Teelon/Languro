@@ -1,6 +1,6 @@
 
 import 'dotenv/config';
-import { validateDrillAnswer } from '../lib/drill/validation';
+import { validateDrillAnswer } from '../src/lib/drill/validation';
 import { prisma } from '../src/utils/prismaDB';
 
 async function main() {
