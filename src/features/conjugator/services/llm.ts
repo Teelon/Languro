@@ -25,13 +25,21 @@ interface LLMResponse {
  * If preferredLanguage is provided, the LLM will prioritize that language.
  * Returns suggestedVerb if the word isn't a verb in the target language.
  */
+/**
+ * Lightweight Language & Infinitive Detection.
+ * Uses a faster/cheaper model to identify verbs.
+ * If preferredLanguage is provided, the LLM will prioritize that language.
+ * Returns suggestedVerb if the word isn't a verb in the target language.
+ */
 export async function detectLanguageAndInfinitive(
     verb: string,
     preferredLanguage?: 'en' | 'fr' | 'es'
 ): Promise<{
     language: 'en' | 'fr' | 'es';
-    infinitive: string;
+    infinitive: string | null;
     isValid: boolean;
+    isVerbLikelihood: number;
+    lemmaConfidence: number;
 } | null> {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY missing');
@@ -41,30 +49,30 @@ export async function detectLanguageAndInfinitive(
     const targetLangName = preferredLanguage === 'en' ? 'English' : preferredLanguage === 'fr' ? 'French' : preferredLanguage === 'es' ? 'Spanish' : 'any';
 
     const prompt = `
-    TASK: Identify the language and infinitive form of the word "${verb}".
-    User's target language: ${targetLangName}
+    TASK: Analyze the word "${verb}".
+    User's preferred language: ${targetLangName}
     
-    IMPORTANT: Do NOT translate. Identify the ACTUAL language of the word.
+    IMPORTANT: Do NOT translate. Identify what the word actually is.
     
-    Rules:
-    1. Check if "${verb}" is a valid verb (or conjugated form) in ${targetLangName}.
-    2. If YES: Set isValid=true, set language to "${preferredLanguage}", return the infinitive.
-    3. If NO: Set isValid=false. Identify what language "${verb}" ACTUALLY is (don't translate!).
-       Return the actual language and infinitive of the word as-is.
+    1. Determine if "${verb}" is a verb (or conjugated form) in ${targetLangName}.
+    2. If NO, determine if it is a verb in English, French, or Spanish.
+    3. Extract the infinitive (lemma).
+    4. Assign confidence scores (0.0 to 1.0).
     
     STRICT JSON response (single object):
     {
-        "isValid": true/false,
-        "language": "the actual language of the word (en/fr/es)",
-        "infinitive": "the infinitive form in the word's actual language"
+        "language": "en" | "fr" | "es" | null,
+        "infinitive": "lemma or null",
+        "isValid": true/false (true if it IS a valid verb in the detected language),
+        "isVerbLikelihood": 0.0 to 1.0 (how likely is this word a verb?),
+        "lemmaConfidence": 0.0 to 1.0 (confidence in the extracted infinitive)
     }
     
     Examples:
-    - "run" with target Spanish: { "isValid": false, "language": "en", "infinitive": "to run" }
-    - "comer" with target Spanish: { "isValid": true, "language": "es", "infinitive": "comer" }
-    - "running" with target English: { "isValid": true, "language": "en", "infinitive": "to run" }
-    - "correr" with target English: { "isValid": false, "language": "es", "infinitive": "correr" }
-    - "manger" with target Spanish: { "isValid": false, "language": "fr", "infinitive": "manger" }
+    - "run" (pref: Spanish) -> { "language": "en", "infinitive": "run", "isValid": true, "isVerbLikelihood": 0.99, "lemmaConfidence": 0.99 }
+    - "comer" (pref: Spanish) -> { "language": "es", "infinitive": "comer", "isValid": true, "isVerbLikelihood": 0.99, "lemmaConfidence": 0.99 }
+    - "commmer" (pref: Spanish) -> { "language": "es", "infinitive": "comer", "isValid": false, "isVerbLikelihood": 0.8, "lemmaConfidence": 0.6 } (typo)
+    - "xyz123" -> { "language": null, "infinitive": null, "isValid": false, "isVerbLikelihood": 0.0, "lemmaConfidence": 0.0 }
     `;
 
     try {
@@ -93,49 +101,31 @@ export async function detectLanguageAndInfinitive(
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) return null;
 
-        // Robust JSON extraction
-        let cleanJson = text;
-        const jsonStart = text.indexOf('{');
-        const jsonEnd = text.lastIndexOf('}');
-
-        if (jsonStart !== -1 && jsonEnd !== -1) {
-            cleanJson = text.substring(jsonStart, jsonEnd + 1);
-        } else {
-            cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        }
+        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
         try {
             const data = JSON.parse(cleanJson);
 
-            // Valid verb in target language
-            if (data.isValid && ['en', 'fr', 'es'].includes(data.language) && data.infinitive) {
-                console.log(`[LLM] ✅ Valid ${data.language.toUpperCase()} verb: "${verb}" → "${data.infinitive}"`);
+            console.log(`[LLM] Result for "${verb}":`, JSON.stringify(data));
+
+            // Validate logic: if language is null or infinitive is null, return basic not found structure
+            if (!data.language || !data.infinitive) {
                 return {
-                    language: data.language as 'en' | 'fr' | 'es',
-                    infinitive: data.infinitive,
-                    isValid: true
+                    language: preferredLanguage || 'en', // fallback to something safe or user pref
+                    infinitive: null,
+                    isValid: false,
+                    isVerbLikelihood: data.isVerbLikelihood || 0,
+                    lemmaConfidence: data.lemmaConfidence || 0
                 };
             }
 
-            // Not valid in target language - return actual language detected
-            if (!data.isValid && ['en', 'fr', 'es'].includes(data.language) && data.infinitive) {
-                console.log(`[LLM] ⚠️  NOT a ${preferredLanguage?.toUpperCase()} verb. Actually: "${data.infinitive}" (${data.language.toUpperCase()})`);
-                return {
-                    language: data.language as 'en' | 'fr' | 'es',
-                    infinitive: data.infinitive,
-                    isValid: false
-                };
-            }
-
-            // Fallback: just use whatever we got if language and infinitive are valid
-            if (['en', 'fr', 'es'].includes(data.language) && data.infinitive) {
-                console.log(`[LLM] ✅ Detected: "${data.infinitive}" (${data.language.toUpperCase()})`);
-                return {
-                    language: data.language as 'en' | 'fr' | 'es',
-                    infinitive: data.infinitive,
-                    isValid: data.isValid !== false
-                };
-            }
+            return {
+                language: data.language as 'en' | 'fr' | 'es',
+                infinitive: data.infinitive,
+                isValid: data.isValid,
+                isVerbLikelihood: data.isVerbLikelihood ?? (data.isValid ? 0.9 : 0.1),
+                lemmaConfidence: data.lemmaConfidence ?? 0.8
+            };
 
         } catch (parseError) {
             console.error(`[LLM] ❌ JSON parse error. Raw: "${text.substring(0, 100)}..."`);
@@ -329,6 +319,7 @@ export async function generateConjugations(
         const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!text) {
+            console.error('[LLM Error] Empty text in response. Full result:', JSON.stringify(result, null, 2));
             throw new Error('Empty response from Gemini');
         }
 
