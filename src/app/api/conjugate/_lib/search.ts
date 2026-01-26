@@ -124,8 +124,8 @@ export async function searchConjugationsCheck(
   }
 
   // 3) Fuzzy candidates (lemma + conjugated)
-  const lemmaCandidates = await findVerbFuzzyCandidates(normalized, preferredLanguage, 0.25, 10);
-  const conjCandidates = await findConjugatedVerbFuzzyCandidates(normalized, preferredLanguage, 0.30, 10);
+  const lemmaCandidates = await findVerbFuzzyCandidates(normalized, preferredLanguage, 0.40, 10);
+  const conjCandidates = await findConjugatedVerbFuzzyCandidates(normalized, preferredLanguage, 0.40, 10);
 
   // Build suggestions list
   const suggestionsRaw = [
@@ -144,7 +144,13 @@ export async function searchConjugationsCheck(
     })),
   ].sort((a, b) => b.similarity - a.similarity);
 
-  const suggestions = dedupeSuggestions(suggestionsRaw).slice(0, 5);
+  // CRITICAL FIX: Filter to ONLY show preferred language suggestions
+  // This prevents cross-language pollution (e.g., French "manajar" when Spanish is selected)
+  const filteredSuggestions = preferredLanguage
+    ? suggestionsRaw.filter(s => s.language === preferredLanguage)
+    : suggestionsRaw;
+
+  const suggestions = dedupeSuggestions(filteredSuggestions).slice(0, 5);
 
   // 3A) Auto-accept fuzzy lemma only if high confidence + margin AND length > 4
   if (lemmaCandidates.length > 0) {
@@ -154,8 +160,12 @@ export async function searchConjugationsCheck(
     const minAccept = minAcceptForLen(l);
     const margin = 0.10;
 
+    // CRITICAL: Only auto-accept if language matches preferred language
+    const languageMatches = !preferredLanguage || best.language === preferredLanguage;
+
     const accept =
       l > 4 &&
+      languageMatches && // ✅ NEW: Must match preferred language
       shouldAcceptFuzzy(best.similarity, second?.similarity ?? null, minAccept, margin);
 
     if (accept && !forceAi) { // Don't auto-accept if user is forcing a check
@@ -208,9 +218,27 @@ export async function searchConjugationsCheck(
     return { ...base, status: 'NOT_FOUND', message: `Could not determine language for "${raw}".` };
   }
 
+  // CRITICAL: If preferredLanguage is set, and AI detected a different language,
+  // do NOT auto-switch. Instead, suggest it.
+  const isCrossLanguage = preferredLanguage && aiLang && preferredLanguage !== aiLang;
+
   // Try exact lookup with AI lemma (maybe we have "comer" but user typed "komer" and fuzzy failed?)
   const exactAiLemma = await findVerbInAnyLanguage(ai.infinitive, aiLang);
   if (exactAiLemma) {
+    if (isCrossLanguage) {
+      return {
+        ...base,
+        status: 'DID_YOU_MEAN',
+        suggestions: [{
+          language: exactAiLemma.language as SupportedLang,
+          infinitive: exactAiLemma.infinitive,
+          source: 'NEARBY',
+          similarity: 0.95
+        }],
+        message: `No Spanish match. Did you mean "${exactAiLemma.infinitive}" in ${exactAiLemma.language === 'en' ? 'English' : exactAiLemma.language === 'fr' ? 'French' : 'Spanish'}?`
+      };
+    }
+
     const data = await getExistingConjugations(exactAiLemma.infinitive, exactAiLemma.language);
     return {
       ...base,
@@ -227,6 +255,20 @@ export async function searchConjugationsCheck(
   }
 
   // Not in DB: needs generation
+  if (isCrossLanguage) {
+    return {
+      ...base,
+      status: 'DID_YOU_MEAN',
+      suggestions: [{
+        language: aiLang,
+        infinitive: ai.infinitive,
+        source: 'NEARBY',
+        similarity: 0.95
+      }],
+      message: `No Spanish match. Did you mean "${ai.infinitive}" in ${aiLang}?`
+    };
+  }
+
   return {
     ...base,
     status: 'NEEDS_GENERATION',

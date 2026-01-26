@@ -81,15 +81,31 @@ export async function findConjugatedVerb(form: string, preferredLanguage?: 'en' 
   const normalized = form.toLowerCase().trim();
   const langFilter = preferredLanguage ? Prisma.sql`AND l.iso_code = ${preferredLanguage}` : Prisma.sql``;
 
+  // Use the same CTE strategy for precise lookup
   const results = await prisma.$queryRaw<Array<{ infinitive: string, iso_code: string }>>`
-        SELECT 
+        WITH conjugated_forms AS (
+          SELECT 
             c.metadata->>'infinitive' as infinitive,
-            l.iso_code
-        FROM "content_items" c
-        JOIN "languages" l ON c."languageId" = l.id
-        WHERE c."contentType" = 'VERB'
-        ${langFilter}
-        AND (c.metadata::text ILIKE ${'%' + normalized + '%'}) -- Quick filter
+            l.iso_code,
+            jsonb_array_elements(c.metadata->'tenses') -> 'items' as conjugations
+          FROM "content_items" c
+          JOIN "languages" l ON c."languageId" = l.id
+          WHERE c."contentType" = 'VERB'
+            ${langFilter}
+        ),
+        forms_expanded AS (
+          SELECT 
+            infinitive,
+            iso_code,
+            value->>'text' as display_form
+          FROM conjugated_forms,
+          jsonb_array_elements(conjugations)
+        )
+        SELECT 
+            infinitive,
+            iso_code
+        FROM forms_expanded
+        WHERE lower(display_form) = ${normalized}
         LIMIT 1
     `;
 
@@ -202,16 +218,34 @@ export async function findConjugatedVerbFuzzyCandidates(
 
   const langFilter = preferredLanguage ? Prisma.sql`AND l.iso_code = ${preferredLanguage}` : Prisma.sql``;
 
-  const candidates = await prisma.$queryRaw<Array<{ infinitive: string, iso_code: string, sim: number }>>`
-        SELECT 
+  // We need to unnest the tenses array, then the items array within each tense
+  // to access the text property.
+  const candidates = await prisma.$queryRaw<Array<{ infinitive: string, iso_code: string, matched_form: string, sim: number }>>`
+        WITH conjugated_forms AS (
+          SELECT 
             c.metadata->>'infinitive' as infinitive,
             l.iso_code,
-            similarity(c.metadata->>'infinitive', ${normalized}) as sim
-        FROM "content_items" c
-        JOIN "languages" l ON c."languageId" = l.id
-        WHERE c."contentType" = 'VERB'
-        ${langFilter}
-        AND similarity(c.metadata->>'infinitive', ${normalized}) >= ${threshold}
+            jsonb_array_elements(c.metadata->'tenses') -> 'items' as conjugations
+          FROM "content_items" c
+          JOIN "languages" l ON c."languageId" = l.id
+          WHERE c."contentType" = 'VERB'
+            ${langFilter}
+        ),
+        forms_expanded AS (
+          SELECT 
+            infinitive,
+            iso_code,
+            value->>'text' as display_form
+          FROM conjugated_forms,
+          jsonb_array_elements(conjugations)
+        )
+        SELECT 
+            infinitive,
+            iso_code,
+            display_form as matched_form,
+            similarity(display_form, ${normalized}) as sim
+        FROM forms_expanded
+        WHERE similarity(display_form, ${normalized}) >= ${threshold}
         ORDER BY sim DESC
         LIMIT ${limit}
     `;
@@ -219,7 +253,7 @@ export async function findConjugatedVerbFuzzyCandidates(
   return candidates.map(c => ({
     language: c.iso_code as 'en' | 'fr' | 'es',
     infinitive: c.infinitive,
-    matchedForm: c.infinitive, // placeholder
+    matchedForm: c.matched_form,
     similarity: c.sim
   }));
 }
