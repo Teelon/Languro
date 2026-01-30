@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/utils/auth';
 import { validateDrillAnswer } from '@/lib/drill/validation';
 import { prisma } from '@/utils/prismaDB';
+import { trackVocabularyEncounter } from '@/lib/vocabulary/tracking';
 
 export async function POST(request: Request) {
   try {
@@ -93,6 +94,35 @@ export async function POST(request: Request) {
 
       return { attempt: newAttempt, mastery: updatedMastery };
     });
+
+    // Fire-and-forget vocabulary tracking
+    // We do this outside the main transaction to avoid slowing down user response
+    (async () => {
+      try {
+        const drillItem = await prisma.drillItem.findUnique({
+          where: { id: drillItemId },
+          include: {
+            contentItem: {
+              include: {
+                verbTranslation: true
+              }
+            }
+          }
+        });
+
+        if (drillItem?.contentItem?.verbTranslation) {
+          const { word, language_id } = drillItem.contentItem.verbTranslation;
+          await trackVocabularyEncounter(
+            session.user.id,
+            language_id,
+            word,
+            drillItem.contentItem.id
+          );
+        }
+      } catch (err) {
+        console.error("Failed to track vocabulary from drill", err);
+      }
+    })();
 
     return NextResponse.json({
       success: true,

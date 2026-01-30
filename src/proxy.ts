@@ -26,10 +26,33 @@ export async function proxy(req: NextRequest) {
 
   const isProtectedRoute = protectedPrefixes.some(prefix => pathname.startsWith(prefix));
 
+  // Marketing pages that should redirect if authenticated
+  const marketingPages = [
+    "/",
+    "/about",
+    "/pricing",
+    "/contact",
+    "/blogs",
+    "/conjugation",
+    "/error",
+  ];
+
+  const isMarketingPage = marketingPages.some(
+    (page) => pathname === page || pathname.startsWith(`${page}/`)
+  );
+
+  // Redirect authenticated users from auth pages to dashboard
   if (isAuthPage && isAuth) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  // Redirect authenticated users from marketing pages to dashboard
+  if (isMarketingPage && isAuth) {
+    console.log(`Proxy: Redirecting authenticated user from ${pathname} to /dashboard`);
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // Redirect unauthenticated users from protected routes to signin
   if (isProtectedRoute && !isAuth) {
     return NextResponse.redirect(new URL("/signin", req.url));
   }
@@ -54,6 +77,13 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
+    "/about/:path*",
+    "/pricing/:path*",
+    "/contact/:path*",
+    "/blogs/:path*",
+    "/conjugation/:path*",
+    "/error/:path*",
     "/signin",
     "/signup",
     "/register",

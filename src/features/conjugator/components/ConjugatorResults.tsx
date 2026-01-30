@@ -6,6 +6,7 @@ import FeedbackModal from './FeedbackModal';
 import { useSession } from 'next-auth/react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { audioCache } from '@/lib/audio-cache';
+import { AddToUserList } from '../../user-lists/components/AddToUserList';
 
 // Simple Icon Components
 const IconVolume2 = ({ size = 24, className = "" }: { size?: number, className?: string }) => (
@@ -376,6 +377,12 @@ export default function ConjugatorResults({ data }: ConjugatorResultsProps) {
                     <span className="text-4xl">
                         {data.language === 'es' ? '🇪🇸' : data.language === 'fr' ? '🇫🇷' : 'EN'}
                     </span>
+                    <div className="ml-auto">
+                        <AddToUserList
+                            verb={data.infinitive}
+                            language={data.language}
+                        />
+                    </div>
                 </div>
 
                 {/* Translation / Detection Feedback */}

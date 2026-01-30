@@ -52,6 +52,7 @@ model User {
   userLists      UserList[]
   masteryRecords Mastery[]
   drillAttempts  Attempt[]
+  vocabulary     UserVocabulary[]
 }
 
 model UserPreferences {
@@ -150,6 +151,7 @@ model Language {
   templatePacks       TemplatePack[]
   nativeLanguageUsers UserOnboardingProfile[] @relation("NativeLanguage")
   targetLanguageUsers UserOnboardingProfile[] @relation("TargetLanguage")
+  userVocabulary      UserVocabulary[]
 
   @@map("languages")
 }
@@ -283,6 +285,7 @@ model ContentItem {
   drillItems        DrillItem[]
   userListItems     UserListItem[]
   templatePackItems TemplatePackItem[]
+  userVocabulary    UserVocabulary[]
 
   @@unique([languageId, contentType, verbTranslationId])
   @@index([contentType, languageId])
@@ -429,4 +432,24 @@ model TemplatePackItem {
 
   @@index([packId, sortOrder])
   @@map("template_pack_items")
+}
+
+model UserVocabulary {
+  id             String    @id @default(cuid())
+  userId         String
+  word           String    @db.VarChar(100)
+  languageId     Int
+  contentItemId  String?
+  
+  firstSeenAt    DateTime  @default(now())
+  lastSeenAt     DateTime  @default(now())
+  encounterCount Int       @default(1)
+  
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language       Language     @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  contentItem    ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, languageId, word])
+  @@index([userId, lastSeenAt])
+  @@map("user_vocabulary")
 }

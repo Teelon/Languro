@@ -6,6 +6,7 @@ export interface SessionConfig {
   languageId?: number;
   count: number;
   mode?: 'random' | 'smart'; // 'smart' will come later with SRS
+  tenses?: string[];
 }
 
 export interface DrillPrompt {
@@ -49,6 +50,23 @@ export async function buildDrillSession(
   // Filter by language if provided
   if (config.languageId) {
     whereConditions.contentItem.languageId = config.languageId;
+  }
+
+  // Filter by tenses if provided
+  if (config.tenses && config.tenses.length > 0) {
+    const tenseFilters = config.tenses.map(tense => ({
+      promptTemplate: {
+        path: ['tenseName'],
+        equals: tense
+      }
+    }));
+
+    // If multiple tenses, we use OR
+    if (tenseFilters.length === 1) {
+      whereConditions.promptTemplate = tenseFilters[0].promptTemplate;
+    } else {
+      whereConditions.OR = tenseFilters;
+    }
   }
 
   // Fetch drill items

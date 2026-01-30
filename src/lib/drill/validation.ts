@@ -116,7 +116,11 @@ async function classifyError(
   // 2. Check if it's a different form of the same verb
   const promptTemplate = drillItem.promptTemplate as any;
   const conjugationId = promptTemplate.conjugationId;
-  const verbTranslationId = (drillItem.contentItem.data as any).verbTranslationId;
+  const verbTranslationId = drillItem.contentItem.verbTranslationId || (drillItem.contentItem.data as any)?.verbTranslationId;
+
+  if (!verbTranslationId) {
+    return 'OTHER';
+  }
 
   // Get all other forms of this verb
   const otherForms = await prisma.conjugation.findMany({

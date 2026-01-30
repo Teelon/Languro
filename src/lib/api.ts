@@ -42,12 +42,13 @@ export interface SessionResultResponse {
 
 export async function startDrillSession(
   count: number = 20,
-  listId?: string
+  listId?: string,
+  tenses?: string[]
 ): Promise<StartSessionResponse> {
   const res = await fetch('/api/drill/session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ count, listId })
+    body: JSON.stringify({ count, listId, tenses })
   });
 
   if (!res.ok) {

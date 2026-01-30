@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { listId, languageId, count = 20 } = await request.json();
+    const { listId, languageId, count = 20, tenses } = await request.json();
 
     // Validate count
     if (count < 1 || count > 100) {
@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       listId,
       languageId,
       count,
+      tenses,
       mode: 'random'
     });
 

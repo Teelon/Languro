@@ -16,7 +16,9 @@ export const metadata: Metadata = {
   description: "The serious language learning engine for real proficiency. Train morphology, syntax, and literacy with AI-powered drills.",
 };
 
-export default function Home() {
+
+export default async function Home() {
+
   return (
     <main>
       <Hero />

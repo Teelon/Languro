@@ -1,0 +1,72 @@
+﻿Debugging Drill Generation...
+Content Item: {
+  "id": "cmkj5dhfb0000mw7vw7650h3m",
+  "languageId": 1,
+  "contentType": "verb",
+  "verbTranslationId": null,
+  "data": {
+    "infinitive": "to come",
+    "conceptName": "Motion towards",
+    "availableMoods": [
+      "Indicative"
+    ],
+    "availableTenses": [
+      "Simple Present",
+      "Simple Past"
+    ],
+    "conjugationCount": 10,
+    "verbTranslationId": 1
+  },
+  "metadata": {
+    "tags": [
+      "irregular",
+      "very_common"
+    ],
+    "cefrLevel": "A1",
+    "frequency": "very_common",
+    "difficulty": 2,
+    "migratedAt": "2026-01-18T02:59:01.359Z",
+    "totalForms": 10,
+    "usageNotes": "Irregular past tense (came) and past participle (come).",
+    "isIrregular": true,
+    "tensesCount": 2,
+    "hasConjugations": true,
+    "learnerChallenges": [
+      "Confusing past tense 'came' with present 'come'"
+    ],
+    "classificationSource": "gemini"
+  },
+  "createdAt": "2026-01-18T02:59:01.367Z"
+}
+Using verbTranslationId: 1
+Found 98 conjugations
+First conjugation: {
+  "id": 1,
+  "verb_translation_id": 1,
+  "tense_id": 1,
+  "pronoun_id": 1,
+  "auxiliary_part": null,
+  "root_part": "come",
+  "ending_part": "",
+  "display_form": "come",
+  "has_audio": false,
+  "audio_file_key": null,
+  "vote_score": 0,
+  "is_flagged": false,
+  "tense": {
+    "id": 1,
+    "language_id": 1,
+    "category_id": 1,
+    "tense_name": "Simple Present",
+    "mood": "Indicative",
+    "is_literary": false
+  },
+  "pronoun": {
+    "id": 1,
+    "language_id": 1,
+    "code": "1S",
+    "label": "I"
+  }
+}
+After filtering literary: 98
+After checking tense/pronoun presence: 98

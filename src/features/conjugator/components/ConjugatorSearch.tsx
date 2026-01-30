@@ -1,11 +1,28 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FullConjugationData } from '../types';
 import { cn } from '@/lib/utils';
-// Note: importing types from backend-only file might break if it imports server deps. 
-// We'll define the API response types locally or use a shared types file. 
-// For now, mirroring the shape here is safest to avoid "fs" import errors on client.
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Search,
+    Languages,
+    Sparkles,
+    ChevronRight,
+    Loader2,
+    AlertCircle,
+    Info,
+    CheckCircle2
+} from 'lucide-react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 type SearchStatus = 'FOUND' | 'DID_YOU_MEAN' | 'NOT_FOUND' | 'NEEDS_GENERATION';
 
@@ -38,6 +55,21 @@ interface ConjugatorSearchProps {
     onData: (data: FullConjugationData) => void;
 }
 
+const LANGUAGE_FACTS = [
+    "Spanish has two verbs for 'to be' (ser and estar), which often confuses learners.",
+    "English is one of the few languages where the future tense uses a helper verb (will).",
+    "French verb endings in the present tense (-e, -es, -e, -ent) are often silent.",
+    "The most common verb in the English language is 'be'.",
+    "Japanese has no future tense; it uses the present tense with time words.",
+    "In German, the verb often gets kicked to the very end of the sentence.",
+    "Arabic verbs are based on a root system of usually three letters.",
+    "Mandarin Chinese verbs do not conjugate for person, number, or tense!",
+    "Language learning actually increases the size of your brain!",
+    "The English word 'run' has over 645 different meanings.",
+    "Spanish is the second most spoken native language in the world.",
+    "French was the official language of England for over 300 years."
+];
+
 export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
     const [verb, setVerb] = useState('');
     const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('es');
@@ -58,15 +90,11 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
 
         if (isGenerating) {
             setProgress(0);
-
-            // Rotate facts every 8s
             factInterval = setInterval(() => {
                 setCurrentFact((prev) => (prev + 1) % LANGUAGE_FACTS.length);
-            }, 8000);
+            }, 6000);
 
-            // Increment progress over ~62s
-            // We want to reach ~95% in 62s, leaving 5% for the final complete call
-            const duration = 62000;
+            const duration = 60000;
             const interval = 100;
             const steps = duration / interval;
             const increment = 95 / steps;
@@ -85,7 +113,6 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
         };
     }, [isGenerating]);
 
-    // Handle initial search (check)
     const performSearch = useCallback(async (searchVerb: string, searchLang: 'en' | 'fr' | 'es', forceAi: boolean = false) => {
         if (!searchVerb.trim()) return;
 
@@ -109,29 +136,22 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
             });
 
             if (!res.ok) throw new Error('Search failed');
-
             const result: SearchResponse = await res.json();
 
-            // Handle different statuses
             if (result.status === 'FOUND') {
                 if (result.data) {
                     onData(result.data);
                     if (result.message) setNotification(result.message);
-                } else if (result.match) {
-                    // Should have data included technically, but if not, logic implies we have it cached?
-                    // The generic search returns data if cached. 
-                    // If source is AI_LEMMA and exact match found, data is sent.
+                } else {
                     setError("Data found but payload missing. Please try again.");
                 }
             } else if (result.status === 'DID_YOU_MEAN') {
                 setSuggestions(result.suggestions);
                 if (result.message) setNotification(result.message);
-                onData(null as any); // Clear results
+                onData(null as any);
             } else if (result.status === 'NEEDS_GENERATION' && result.match) {
-                // Trigger generation flow
                 triggerGeneration(result.match.infinitive, result.match.language);
             } else {
-                // NOT_FOUND
                 if (result.suggestions && result.suggestions.length > 0) {
                     setSuggestions(result.suggestions);
                     setNotification(result.message || 'Not found. Did you mean?');
@@ -140,7 +160,6 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
                 }
                 onData(null as any);
             }
-
         } catch (err: any) {
             console.error(err);
             setError(err.message || 'An error occurred');
@@ -152,21 +171,19 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
     const triggerGeneration = async (infinitive: string, lang: 'en' | 'fr' | 'es') => {
         setIsGenerating(true);
         setCurrentFact(0);
-        setLoading(true); // Keep main loading true or separate? Let's use isGenerating for UI overlay
+        setLoading(true);
 
         try {
             const res = await fetch('/api/conjugate/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    infinitive: infinitive,
+                    infinitive,
                     language: lang
                 }),
             });
 
-            // If finished, jump progress to 100
             setProgress(100);
-
             const result: SearchResponse = await res.json();
 
             if (!res.ok) throw new Error(result.message || 'Generation failed');
@@ -174,38 +191,22 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
             if (result.status === 'FOUND' && result.data) {
                 onData(result.data);
                 setNotification(result.message || 'Generated successfully!');
-            } else if (result.status === 'NEEDS_GENERATION') {
-                // Still waiting/locked? 
-                setError("Generation is taking longer than expected. Please try again in 10 seconds.");
             } else {
-                setError(result.message || 'Generation returned unexpected status.');
+                setError(result.message || 'Generation failed.');
             }
-
         } catch (err: any) {
             setError(err.message || 'Generation failed');
         } finally {
-            // Short delay to let user see 100% bar
             setTimeout(() => {
                 setIsGenerating(false);
                 setLoading(false);
                 setProgress(0);
-            }, 500);
+            }, 800);
         }
     };
 
-    const handleSearch = () => {
-        performSearch(verb, language);
-    };
+    const handleSearch = () => performSearch(verb, language);
 
-    const handleSuggestionClick = (s: { infinitive: string, language: 'en' | 'fr' | 'es' }) => {
-        performSearch(s.infinitive, s.language);
-    };
-
-    const handleForceSearch = () => {
-        performSearch(verb, language, true);
-    };
-
-    // Listen for cross-component events if needed
     useEffect(() => {
         const handleExternalSearch = (e: Event) => {
             const customEvent = e as CustomEvent<{ verb: string; language: 'en' | 'fr' | 'es' }>;
@@ -216,158 +217,189 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
     }, [performSearch]);
 
     return (
-        <div className="mx-auto mb-8 max-w-[900px] p-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="relative min-w-[120px] sm:w-[140px]">
-                    <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value as any)}
-                        className="w-full appearance-none rounded-md border border-gray-300 bg-white px-4 py-3 pr-8 text-base text-slate-600 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                        aria-label="Language selection"
+        <div className="mx-auto mb-10 max-w-2xl px-4">
+            <motion.div
+                layout
+                className="relative z-10 overflow-hidden rounded-xl border bg-white/70 shadow-xl backdrop-blur-md dark:bg-slate-900/70 border-white/20 dark:border-slate-800/50"
+            >
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center p-1.5 gap-1.5">
+                    <div className="flex items-center gap-1.5 px-1.5 sm:border-r dark:border-slate-800">
+                        <Languages className="h-3.5 w-3.5 text-primary opacity-70" />
+                        <Select value={language} onValueChange={(v: any) => setLanguage(v)}>
+                            <SelectTrigger className="w-[100px] border-0 bg-transparent focus:ring-0 shadow-none font-medium h-8 text-xs">
+                                <SelectValue placeholder="Language" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="es" className="text-xs">Spanish</SelectItem>
+                                <SelectItem value="en" className="text-xs">English</SelectItem>
+                                <SelectItem value="fr" className="text-xs">French</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="flex-1 relative flex items-center">
+                        <Input
+                            type="text"
+                            value={verb}
+                            onChange={(e) => setVerb(e.target.value)}
+                            placeholder="Type a verb..."
+                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                            className="w-full border-0 bg-transparent focus-visible:ring-0 shadow-none text-sm h-8"
+                        />
+                    </div>
+
+                    <Button
+                        onClick={handleSearch}
+                        disabled={loading || !verb}
+                        className="rounded-lg px-4 h-8 bg-primary hover:bg-primary/90 transition-all duration-300 text-xs py-0"
                     >
-                        <option value="en">English</option>
-                        <option value="fr">French</option>
-                        <option value="es">Spanish</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-600 dark:text-gray-400">
-                        <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
-                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                        </svg>
-                    </div>
+                        {loading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <>
+                                <span className="hidden sm:inline mr-1.5">Conjugate</span>
+                                <Search className="h-3.5 w-3.5" />
+                            </>
+                        )}
+                    </Button>
                 </div>
+            </motion.div>
 
-                <div className="flex-1">
-                    <input
-                        type="text"
-                        value={verb}
-                        onChange={(e) => setVerb(e.target.value)}
-                        placeholder="e.g. comer, manger, run"
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                        className="w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-base text-slate-600 placeholder-slate-500/60 transition focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-600 dark:bg-slate-800 dark:text-white"
-                    />
-                </div>
-
-                <button
-                    onClick={handleSearch}
-                    disabled={loading}
-                    className="min-w-[140px] inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-base font-medium text-white transition hover:bg-primary/90 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                    {loading ? (
-                        <>
-                            <span className="mr-2 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                            {isGenerating ? 'Creating...' : 'Searching...'}
-                        </>
-                    ) : (
-                        'Conjugate'
-                    )}
-                </button>
-            </div>
-
-            {/* ERROR / NOTIFICATION */}
-            {!loading && error && (
-                <div className="mt-4 rounded-md bg-red-50 p-4 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                    {error}
-                </div>
-            )}
-            {!loading && notification && !error && (
-                <div className="mt-4 rounded-md bg-blue-50 p-4 text-sm text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 flex justify-between items-center flex-wrap gap-2">
-                    <span>{notification}</span>
-                    {/* Show force option if we are in DID_YOU_MEAN state */}
-                    {suggestions && suggestions.length > 0 && !isGenerating && (
-                        <button
-                            onClick={handleForceSearch}
-                            className="text-xs font-semibold underline hover:text-blue-800 dark:hover:text-blue-300"
-                        >
-                            Search exactly for "{verb}"?
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* DID YOU MEAN SUGGESTIONS */}
-            {!loading && suggestions && suggestions.length > 0 && (
-                <div className="mt-6">
-                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-3">
-                        Did you mean:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {suggestions.map((s, idx) => (
-                            <button
-                                key={`${s.language}-${s.infinitive}-${idx}`}
-                                onClick={() => handleSuggestionClick({ infinitive: s.matchedForm || s.infinitive, language: s.language })}
-                                className="inline-flex items-center rounded-full bg-white border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-primary hover:border-primary/30 transition dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                            >
-                                <span className={cn("mr-2 text-xs uppercase opacity-50 font-bold",
-                                    s.language === 'en' ? 'text-blue-500' :
-                                        s.language === 'fr' ? 'text-purple-500' : 'text-orange-500'
-                                )}>
-                                    {s.language}
-                                </span>
-                                {s.matchedForm ? (
-                                    <span>
-                                        {s.matchedForm} <span className="opacity-50 mx-1">→</span> {s.infinitive}
-                                    </span>
-                                ) : (
-                                    s.infinitive
-                                )}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* GENERATING LOADING STATE */}
-            {isGenerating && (
-                <div className="mt-6 rounded-lg bg-blue-50/50 p-6 text-center dark:bg-blue-900/10 animate-in fade-in duration-300">
-                    <div className="mb-4 flex justify-center">
-                        <span className="relative flex h-4 w-4">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"></span>
-                            <span className="relative inline-flex h-4 w-4 rounded-full bg-blue-500"></span>
-                        </span>
-                    </div>
-                    <p className="mb-2 text-sm font-medium text-blue-800 dark:text-blue-300">
-                        Generating high-quality verb tables using Pro AI...
-                    </p>
-                    <p className="mb-4 text-xs text-blue-600/80 dark:text-blue-400/80">
-                        This takes about 60 seconds.
-                    </p>
-
-                    {/* Progress Bar */}
-                    <div className="mx-auto max-w-sm mb-6">
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-blue-200 dark:bg-blue-900">
-                            <div
-                                className="h-full bg-blue-500 transition-all duration-300 ease-out"
-                                style={{ width: `${progress}%` }}
-                            />
+            {/* ERROR & NOTIFICATION */}
+            <AnimatePresence mode="wait">
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="mt-3 flex items-center gap-2 rounded-lg bg-red-500/10 p-3 text-xs font-medium text-red-600 dark:text-red-400 border border-red-500/20"
+                    >
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        {error}
+                    </motion.div>
+                )}
+                {notification && !error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-blue-500/10 p-3 text-xs font-medium text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Info className="h-3.5 w-3.5" />
+                            {notification}
                         </div>
-                    </div>
+                        {suggestions && suggestions.length > 0 && !isGenerating && (
+                            <button
+                                onClick={() => performSearch(verb, language, true)}
+                                className="text-[10px] font-bold uppercase tracking-wider text-blue-600 hover:text-blue-700 dark:text-blue-400 underline underline-offset-2"
+                            >
+                                Force AI
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                    <div className="mx-auto max-w-lg border-t border-blue-100 py-4 dark:border-blue-800/30">
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400/80 dark:text-blue-500/80 mb-2">
-                            DID YOU KNOW?
+            {/* SUGGESTIONS */}
+            <AnimatePresence>
+                {!loading && suggestions && suggestions.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-6 overflow-hidden"
+                    >
+                        <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                            Did you mean:
                         </p>
-                        <p className="text-sm italic text-slate-600 dark:text-slate-300 min-h-[40px] transition-all duration-500" key={currentFact}>
-                            "{LANGUAGE_FACTS[currentFact]}"
-                        </p>
-                    </div>
-                </div>
-            )}
+                        <div className="flex flex-wrap gap-1.5">
+                            {suggestions.map((s, idx) => (
+                                <motion.button
+                                    key={`${s.language}-${s.infinitive}-${idx}`}
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    onClick={() => performSearch(s.matchedForm || s.infinitive, s.language)}
+                                    className="group flex items-center gap-1.5 rounded-full border bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm transition-all hover:border-primary/50 hover:bg-primary/5 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-primary/10"
+                                >
+                                    <span className={cn(
+                                        "text-[9px] font-black uppercase opacity-60",
+                                        s.language === 'en' ? 'text-blue-500' :
+                                            s.language === 'fr' ? 'text-purple-500' : 'text-orange-500'
+                                    )}>
+                                        {s.language}
+                                    </span>
+                                    {s.matchedForm ? (
+                                        <span className="text-[11px]">
+                                            {s.matchedForm} <ChevronRight className="inline-block h-2.5 w-2.5 opacity-30" /> {s.infinitive}
+                                        </span>
+                                    ) : (
+                                        <span className="text-[11px]">{s.infinitive}</span>
+                                    )}
+                                </motion.button>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* GENERATING STATE */}
+            <AnimatePresence>
+                {isGenerating && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="mt-8 overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 p-6 dark:border-blue-800/30 dark:from-slate-900/50 dark:to-blue-950/20"
+                    >
+                        <div className="mb-6 flex flex-col items-center text-center">
+                            <div className="mb-3 rounded-full bg-blue-100 p-2 dark:bg-blue-900/40">
+                                <Sparkles className="h-4 w-4 animate-pulse text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <h3 className="mb-1 text-base font-bold text-slate-900 dark:text-white">
+                                Mastering "{verb}"...
+                            </h3>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">
+                                Building professional conjugation tables.
+                            </p>
+                        </div>
+
+                        <div className="mx-auto max-w-xs">
+                            <div className="mb-1.5 flex justify-between text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                                <span>Generating</span>
+                                <span>{Math.round(progress)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-blue-200/50 dark:bg-blue-900/50">
+                                <motion.div
+                                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${progress}%` }}
+                                    transition={{ duration: 0.3 }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6 border-t border-blue-200/50 pt-4 dark:border-blue-800/20">
+                            <p className="mb-2 text-center text-[9px] font-black uppercase tracking-widest text-blue-500/60">
+                                Language Fact
+                            </p>
+                            <AnimatePresence mode="wait">
+                                <motion.p
+                                    key={currentFact}
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -5 }}
+                                    className="text-center text-xs italic leading-relaxed text-slate-700 dark:text-slate-300 px-4"
+                                >
+                                    "{LANGUAGE_FACTS[currentFact]}"
+                                </motion.p>
+                            </AnimatePresence>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
 
-const LANGUAGE_FACTS = [
-    "Spanish has two verbs for 'to be' (ser and estar), which often confuses learners but adds nuance.",
-    "English is one of the few languages where the future tense uses a helper verb (will) instead of a suffix.",
-    "French verb endings in the present tense (-e, -es, -e, -ent) are often silent, making listening tricky!",
-    "The most common verb in the English language is 'be'.",
-    "Japanese has no future tense; it uses the present tense with time words.",
-    "In German, the verb often gets kicked to the very end of the sentence.",
-    "Arabic verbs are based on a root system of usually three letters.",
-    "Mandarin Chinese verbs do not conjugate for person, number, or tense!",
-    "Approximately 7,000 languages are spoken in the world today.",
-    "Language learning actually increases the size of your brain!",
-    "The English word 'run' has over 645 different meanings.",
-    "Spanish is the second most spoken native language in the world after Mandarin.",
-    "French was the official language of England for over 300 years (1066-1362)."
-];

@@ -11,7 +11,7 @@ import type { Adapter } from "next-auth/adapters";
 
 export const authOptions: NextAuthOptions = {
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/signin",
   },
   adapter: PrismaAdapter(prisma) as Adapter,
   secret: process.env.SECRET,
