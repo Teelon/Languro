@@ -218,8 +218,13 @@ export default function DrillRunner({ prompts, onComplete }: DrillRunnerProps) {
               <motion.div
                 className="h-full bg-blue-500"
                 initial={{ width: 0 }}
-                animate={{ width: `${((index) / prompts.length) * 100}%` }}
+                animate={{ width: `${((index + 1) / prompts.length) * 100}%` }}
               />
+            </div>
+
+            {/* Explicit Counter */}
+            <div className="absolute bottom-4 right-6 text-gray-500 text-sm font-medium">
+              {index + 1} / {prompts.length}
             </div>
           </motion.div>
         </AnimatePresence>
