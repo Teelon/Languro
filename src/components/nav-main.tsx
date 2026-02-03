@@ -1,10 +1,13 @@
 "use client"
 
+import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import { MailIcon, PlusCircleIcon, type LucideIcon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -22,6 +25,11 @@ export function NavMain({
     icon?: LucideIcon
   }[]
 }) {
+  const pathname = usePathname()
+
+  // Define where to add separators (after these indices)
+  const separatorIndices = [0, 3, 4] // After Overview, Conjugation, My Lists
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -44,16 +52,28 @@ export function NavMain({
             </Button>
           </SidebarMenuItem>
         </SidebarMenu>
-        <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <Link href={item.url}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+
+        <Separator className="my-2" />
+
+        <SidebarMenu className="gap-1">
+          {items.map((item, index) => (
+            <React.Fragment key={item.title}>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={pathname === item.url}
+                >
+                  <Link href={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {separatorIndices.includes(index) && (
+                <Separator className="my-2 opacity-50" />
+              )}
+            </React.Fragment>
           ))}
         </SidebarMenu>
       </SidebarGroupContent>

@@ -3,11 +3,12 @@
 import * as React from "react"
 import {
   LayoutDashboardIcon,
-  ListIcon,
   User,
   LogOutIcon,
   Dumbbell,
   BookOpen,
+  Languages,
+  Library,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -25,35 +26,45 @@ import {
 
 const data = {
   navMain: [
+    // Dashboard
     {
       title: "Overview",
       url: "/dashboard",
       icon: LayoutDashboardIcon,
+      isSection: false,
     },
+    // Learning Activities
     {
-      title: "Conjugation",
-      url: "/dashboard/conjugation",
-      icon: ListIcon,
-    },
-    {
-      title: "Account",
-      url: "/account",
-      icon: User,
+      title: "Reading",
+      url: "/readings",
+      icon: BookOpen,
+      isSection: false,
     },
     {
       title: "Drills",
       url: "/conjugation-drills",
       icon: Dumbbell,
+      isSection: false,
     },
     {
-      title: "Reading",
-      url: "/readings",
-      icon: BookOpen,
+      title: "Conjugation",
+      url: "/dashboard/conjugation",
+      icon: Languages,
+      isSection: false,
     },
+    // Personal Content
     {
       title: "My Lists",
       url: "/lists",
-      icon: ListIcon,
+      icon: Library,
+      isSection: false,
+    },
+    // Settings
+    {
+      title: "Account",
+      url: "/account",
+      icon: User,
+      isSection: false,
     },
   ],
 }
