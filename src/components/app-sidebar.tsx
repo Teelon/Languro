@@ -46,9 +46,14 @@ const data = {
       icon: Dumbbell,
     },
     {
+      title: "Reading",
+      url: "/readings",
+      icon: BookOpen,
+    },
+    {
       title: "My Lists",
       url: "/lists",
-      icon: BookOpen,
+      icon: ListIcon,
     },
   ],
 }

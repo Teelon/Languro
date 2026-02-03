@@ -8,6 +8,7 @@ import { generateDrillsForVerb } from '@/lib/drill/generator';
 const addItemSchema = z.object({
   verb: z.string().min(1),
   language: z.string().length(2), // iso code e.g. 'fr'
+  context: z.string().optional(),
 });
 
 export async function GET(
@@ -85,7 +86,7 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
     }
 
-    const { verb, language } = validation.data;
+    const { verb, language, context } = validation.data;
 
     // Verify ownership
     const list = await prisma.userList.findUnique({
@@ -164,7 +165,8 @@ export async function POST(
       const userListItem = await prisma.userListItem.create({
         data: {
           listId: listId,
-          contentItemId: contentItem.id
+          contentItemId: contentItem.id,
+          context: context
         }
       });
 

@@ -53,6 +53,8 @@ interface SearchResponse {
 
 interface ConjugatorSearchProps {
     onData: (data: FullConjugationData) => void;
+    initialQuery?: string;
+    embedded?: boolean;
 }
 
 const LANGUAGE_FACTS = [
@@ -70,8 +72,8 @@ const LANGUAGE_FACTS = [
     "French was the official language of England for over 300 years."
 ];
 
-export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
-    const [verb, setVerb] = useState('');
+export default function ConjugatorSearch({ onData, initialQuery, embedded }: ConjugatorSearchProps) {
+    const [verb, setVerb] = useState(initialQuery || '');
     const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('es');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -111,7 +113,14 @@ export default function ConjugatorSearch({ onData }: ConjugatorSearchProps) {
             clearInterval(factInterval);
             clearInterval(progressInterval);
         };
+
     }, [isGenerating]);
+
+    useEffect(() => {
+        if (initialQuery && initialQuery.trim()) {
+            performSearch(initialQuery, language);
+        }
+    }, [initialQuery]); // Auto-search only on mount or query change
 
     const performSearch = useCallback(async (searchVerb: string, searchLang: 'en' | 'fr' | 'es', forceAi: boolean = false) => {
         if (!searchVerb.trim()) return;

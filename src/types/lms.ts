@@ -1,4 +1,4 @@
-export type ContentType = 'verb' | 'vocab' | 'phrase' | 'grammar_rule';
+export type ContentType = 'verb' | 'vocab' | 'phrase' | 'grammar_rule' | 'reading';
 
 export interface BaseContentData {
   // Common fields if any
@@ -22,6 +22,12 @@ export interface PhraseContentData extends BaseContentData {
   context?: string;
 }
 
+export interface ReadingContentData extends BaseContentData {
+  // Most data is in the separate ReadingLesson model, but we might store summary here or empty
+  title?: string;
+  summary?: string;
+}
+
 export interface GrammarRuleContentData extends BaseContentData {
   topic: string;
   ruleDescription: string;
@@ -32,7 +38,8 @@ export type ContentItemData =
   | VerbContentData
   | VocabContentData
   | PhraseContentData
-  | GrammarRuleContentData;
+  | GrammarRuleContentData
+  | ReadingContentData;
 
 export interface ContentItemMetadata {
   difficulty?: number; // 1-5 or similar

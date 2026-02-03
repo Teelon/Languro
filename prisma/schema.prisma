@@ -52,7 +52,9 @@ model User {
   userLists      UserList[]
   masteryRecords Mastery[]
   drillAttempts  Attempt[]
+
   vocabulary     UserVocabulary[]
+  readingProgress ReadingProgress[]
 }
 
 model UserPreferences {
@@ -286,12 +288,43 @@ model ContentItem {
   userListItems     UserListItem[]
   templatePackItems TemplatePackItem[]
   userVocabulary    UserVocabulary[]
+  readingLesson     ReadingLesson?
 
   @@unique([languageId, contentType, verbTranslationId])
   @@index([contentType, languageId])
   @@index([languageId])
   @@index([verbTranslationId])
   @@map("content_items")
+}
+
+model ReadingLesson {
+  id            String      @id @default(cuid())
+  contentItemId String      @unique
+  
+  title         String
+  content       String      @db.Text
+  difficulty    String      // A1, B2 etc
+  audioKey      String?     // R2 key
+  alignment     Json?       // Word-level timestamps
+  
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  progress      ReadingProgress[]
+
+  @@map("reading_lessons")
+}
+
+model ReadingProgress {
+  id              String        @id @default(cuid())
+  userId          String
+  readingLessonId String
+  status          String        @default("started") // "started", "completed"
+  completedAt     DateTime?
+  
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  readingLesson   ReadingLesson @relation(fields: [readingLessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, readingLessonId])
+  @@map("reading_progress")
 }
 
 model DrillItem {
@@ -340,6 +373,7 @@ model UserListItem {
   addedAt   DateTime @default(now())
   sortOrder Int?
   notes     String?
+  context   String?  @db.Text // Store the sentence context where word was found
 
   list        UserList    @relation(fields: [listId], references: [id], onDelete: Cascade)
   contentItem ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)

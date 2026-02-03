@@ -31,9 +31,11 @@ interface AddToUserListProps {
   language: string; // 'es', 'fr', etc.
   languageId?: number; // Optional, can be derived or fetched if needed, but better passed if known
   minimal?: boolean; // For icon-only version
+  context?: string | null;
+  children?: React.ReactNode; // Custom trigger
 }
 
-export function AddToUserList({ verb, language, languageId, minimal = false }: AddToUserListProps) {
+export function AddToUserList({ verb, language, languageId, minimal = false, context, children }: AddToUserListProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -107,7 +109,7 @@ export function AddToUserList({ verb, language, languageId, minimal = false }: A
   const handleAdd = async (listId: string) => {
     setAddingToListId(listId);
     try {
-      await addVerbToBeList(listId, verb, language);
+      await addVerbToBeList(listId, verb, language, context);
       toast.success(`"${verb}" added to list`);
       setOpen(false);
     } catch (error: any) {
@@ -122,15 +124,17 @@ export function AddToUserList({ verb, language, languageId, minimal = false }: A
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size={minimal ? "icon" : "sm"} className="opacity-70">
-            {minimal ? <ListPlus className="h-4 w-4" /> : (
-              <>
-                <ListPlus className="mr-2 h-4 w-4" />
-                Add to list
-              </>
-            )}
-            <span className="sr-only">Add to list (Login required)</span>
-          </Button>
+          {children ? children : (
+            <Button variant="ghost" size={minimal ? "icon" : "sm"} className="opacity-70">
+              {minimal ? <ListPlus className="h-4 w-4" /> : (
+                <>
+                  <ListPlus className="mr-2 h-4 w-4" />
+                  Add to list
+                </>
+              )}
+              <span className="sr-only">Add to list (Login required)</span>
+            </Button>
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64 p-4">
           <div className="flex flex-col space-y-4">
@@ -157,16 +161,18 @@ export function AddToUserList({ verb, language, languageId, minimal = false }: A
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size={minimal ? "icon" : "sm"}>
-          {minimal ? <ListPlus className="h-4 w-4" /> : (
-            <>
-              <ListPlus className="mr-2 h-4 w-4" />
-              Add to list
-            </>
-          )}
-        </Button>
+        {children ? children : (
+          <Button variant="ghost" size={minimal ? "icon" : "sm"}>
+            {minimal ? <ListPlus className="h-4 w-4" /> : (
+              <>
+                <ListPlus className="mr-2 h-4 w-4" />
+                Add to list
+              </>
+            )}
+          </Button>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 z-[100]">
         <DropdownMenuLabel>My Lists</DropdownMenuLabel>
         <DropdownMenuSeparator />
 

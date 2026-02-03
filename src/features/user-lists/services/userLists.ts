@@ -49,11 +49,11 @@ export async function createUserList(params: CreateListParams): Promise<UserList
   return result.list;
 }
 
-export async function addVerbToBeList(listId: string, verb: string, language: string) {
+export async function addVerbToBeList(listId: string, verb: string, language: string, context?: string | null) {
   const res = await fetch(`/api/user-lists/${listId}/items`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ verb, language }),
+    body: JSON.stringify({ verb, language, context }),
   });
 
   if (!res.ok) {
