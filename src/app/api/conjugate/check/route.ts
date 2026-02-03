@@ -17,17 +17,18 @@ export async function POST(req: Request) {
 
   // Track if found
   if (result.status === 'FOUND' && result.match) {
+    const match = result.match;
     // Fire-and-forget tracking
     (async () => {
       try {
         const session = await getServerSession(authOptions);
         if (session?.user?.id) {
-          const langId = await getLanguageId(result.match.language);
+          const langId = await getLanguageId(match.language);
           if (langId) {
             await trackVocabularyEncounter(
               session.user.id,
               langId,
-              result.match.infinitive
+              match.infinitive
             );
           }
         }

@@ -47,20 +47,20 @@ export class GoogleTTSProvider implements TextToSpeechProvider {
         audioEncoding: 'MP3',
         speakingRate: options.speakingRate || 1.0,
       },
-      enableTimePointing: ['SSML_MARK'] as any, // Type cast if necessary
-    });
+      enableTimePointing: ['SSML_MARK'],
+    } as any);
 
     if (!response.audioContent) {
       throw new Error('No audio content received from Google TTS');
     }
 
     // 3. Process Audio Content
-    const audioBuffer = Buffer.from(response.audioContent);
+    const audioBuffer = Buffer.from(response.audioContent as any);
 
     // 4. Process Alignment Timepoints
     // response.timepoints = [{ markName: "word_0", timeSeconds: 0.1 }, ...]
     const alignment: AlignmentPoint[] = [];
-    const timepoints = response.timepoints || [];
+    const timepoints = (response as any).timepoints || [];
 
     // Provide a rough estimate of duration from the last timepoint if not provided
     // or calculate from buffer size / bitrate if needed, but last timepoint is good enough proxy for now
@@ -77,7 +77,7 @@ export class GoogleTTSProvider implements TextToSpeechProvider {
     // End time is roughly the start of the next word.
 
     // Sort timepoints just in case
-    timepoints.sort((a, b) => (a.timeSeconds || 0) - (b.timeSeconds || 0));
+    timepoints.sort((a: any, b: any) => (a.timeSeconds || 0) - (b.timeSeconds || 0));
 
     for (let i = 0; i < timepoints.length; i++) {
       const point = timepoints[i];

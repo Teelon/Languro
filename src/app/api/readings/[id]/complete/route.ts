@@ -5,7 +5,7 @@ import { ReadingService } from '@/lib/reading/service';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -13,7 +13,7 @@ export async function POST(
   }
 
   try {
-    const { id } = params;
+    const { id } = await params;
     await ReadingService.completeReading(session.user.id, id);
     return NextResponse.json({ success: true });
   } catch (error) {
