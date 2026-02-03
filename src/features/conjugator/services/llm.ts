@@ -19,17 +19,50 @@ interface LLMResponse {
     }>;
 }
 
+// In-memory cache for detection results with TTL
+interface CacheEntry {
+    result: Awaited<ReturnType<typeof detectLanguageAndInfinitive>>;
+    timestamp: number;
+}
+
+const detectionCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(verb: string, preferredLanguage?: string): string {
+    return `${verb.toLowerCase()}:${preferredLanguage || 'auto'}`;
+}
+
+function getCachedResult(verb: string, preferredLanguage?: string): Awaited<ReturnType<typeof detectLanguageAndInfinitive>> | null {
+    const key = getCacheKey(verb, preferredLanguage);
+    const entry = detectionCache.get(key);
+
+    if (!entry) return null;
+
+    const isExpired = Date.now() - entry.timestamp > CACHE_TTL_MS;
+    if (isExpired) {
+        detectionCache.delete(key);
+        return null;
+    }
+
+    console.log(`[LLM] 💾 Cache hit for "${verb}"`);
+    return entry.result;
+}
+
+function setCachedResult(verb: string, preferredLanguage: string | undefined, result: Awaited<ReturnType<typeof detectLanguageAndInfinitive>>): void {
+    const key = getCacheKey(verb, preferredLanguage);
+    detectionCache.set(key, {
+        result,
+        timestamp: Date.now()
+    });
+}
+
 /**
  * Lightweight Language & Infinitive Detection.
  * Uses a faster/cheaper model to identify verbs.
  * If preferredLanguage is provided, the LLM will prioritize that language.
  * Returns suggestedVerb if the word isn't a verb in the target language.
- */
-/**
- * Lightweight Language & Infinitive Detection.
- * Uses a faster/cheaper model to identify verbs.
- * If preferredLanguage is provided, the LLM will prioritize that language.
- * Returns suggestedVerb if the word isn't a verb in the target language.
+ * 
+ * Implements retry logic with exponential backoff for rate limit handling.
  */
 export async function detectLanguageAndInfinitive(
     verb: string,
@@ -41,6 +74,12 @@ export async function detectLanguageAndInfinitive(
     isVerbLikelihood: number;
     lemmaConfidence: number;
 } | null> {
+    // Check cache first
+    const cached = getCachedResult(verb, preferredLanguage);
+    if (cached !== null) {
+        return cached;
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY missing');
 
@@ -75,68 +114,105 @@ export async function detectLanguageAndInfinitive(
     - "xyz123" -> { "language": null, "infinitive": null, "isValid": false, "isVerbLikelihood": 0.0, "lemmaConfidence": 0.0 }
     `;
 
-    try {
-        console.log(`[LLM] 🔍 Detecting: "${verb}" (target: ${preferredLanguage?.toUpperCase() || 'AUTO'})`);
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${detectionModel}:generateContent`,
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-goog-api-key': apiKey,
-                },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { response_mime_type: 'application/json' },
-                }),
-            }
-        );
+    // Retry configuration
+    const MAX_RETRIES = 3;
+    const BASE_DELAY_MS = 1000; // 1 second
 
-        if (!response.ok) {
-            console.warn(`[LLM] ❌ Detection API failed: ${response.status}`);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            console.log(`[LLM] 🔍 Detecting: "${verb}" (target: ${preferredLanguage?.toUpperCase() || 'AUTO'}) [Attempt ${attempt + 1}/${MAX_RETRIES + 1}]`);
+
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${detectionModel}:generateContent`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey,
+                    },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { response_mime_type: 'application/json' },
+                    }),
+                }
+            );
+
+            // Handle rate limiting with exponential backoff
+            if (response.status === 429) {
+                if (attempt < MAX_RETRIES) {
+                    const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+                    console.warn(`[LLM] ⏳ Rate limit hit (429). Retrying in ${delay}ms... (Attempt ${attempt + 1}/${MAX_RETRIES})`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    continue; // Retry
+                } else {
+                    console.error(`[LLM] ❌ Detection API failed after ${MAX_RETRIES} retries: 429 (Rate Limit)`);
+                    return null;
+                }
+            }
+
+            if (!response.ok) {
+                console.warn(`[LLM] ❌ Detection API failed: ${response.status}`);
+                return null;
+            }
+
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) return null;
+
+            const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+            try {
+                const data = JSON.parse(cleanJson);
+
+                console.log(`[LLM] ✅ Result for "${verb}":`, JSON.stringify(data));
+
+                // Validate logic: if language is null or infinitive is null, return basic not found structure
+                if (!data.language || !data.infinitive) {
+                    const result = {
+                        language: preferredLanguage || 'en', // fallback to something safe or user pref
+                        infinitive: null,
+                        isValid: false,
+                        isVerbLikelihood: data.isVerbLikelihood || 0,
+                        lemmaConfidence: data.lemmaConfidence || 0
+                    };
+                    setCachedResult(verb, preferredLanguage, result);
+                    return result;
+                }
+
+                const result = {
+                    language: data.language as 'en' | 'fr' | 'es',
+                    infinitive: data.infinitive,
+                    isValid: data.isValid,
+                    isVerbLikelihood: data.isVerbLikelihood ?? (data.isValid ? 0.9 : 0.1),
+                    lemmaConfidence: data.lemmaConfidence ?? 0.8
+                };
+
+                // Cache the successful result
+                setCachedResult(verb, preferredLanguage, result);
+                return result;
+
+            } catch (parseError) {
+                console.error(`[LLM] ❌ JSON parse error. Raw: "${text.substring(0, 100)}..."`);
+            }
+
+            return null;
+
+        } catch (e) {
+            console.error(`[LLM] ❌ Detection error (attempt ${attempt + 1}):`, e);
+
+            // If it's not the last attempt, retry
+            if (attempt < MAX_RETRIES) {
+                const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+                console.warn(`[LLM] ⏳ Retrying in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+
             return null;
         }
-
-        const result = await response.json();
-        const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) return null;
-
-        const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        try {
-            const data = JSON.parse(cleanJson);
-
-            console.log(`[LLM] Result for "${verb}":`, JSON.stringify(data));
-
-            // Validate logic: if language is null or infinitive is null, return basic not found structure
-            if (!data.language || !data.infinitive) {
-                return {
-                    language: preferredLanguage || 'en', // fallback to something safe or user pref
-                    infinitive: null,
-                    isValid: false,
-                    isVerbLikelihood: data.isVerbLikelihood || 0,
-                    lemmaConfidence: data.lemmaConfidence || 0
-                };
-            }
-
-            return {
-                language: data.language as 'en' | 'fr' | 'es',
-                infinitive: data.infinitive,
-                isValid: data.isValid,
-                isVerbLikelihood: data.isVerbLikelihood ?? (data.isValid ? 0.9 : 0.1),
-                lemmaConfidence: data.lemmaConfidence ?? 0.8
-            };
-
-        } catch (parseError) {
-            console.error(`[LLM] ❌ JSON parse error. Raw: "${text.substring(0, 100)}..."`);
-        }
-
-        return null;
-
-    } catch (e) {
-        console.error('[LLM] ❌ Detection error:', e);
-        return null;
     }
+
+    return null;
 }
 
 /**
