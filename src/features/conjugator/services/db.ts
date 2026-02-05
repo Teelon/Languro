@@ -58,23 +58,124 @@ export async function findVerbInAnyLanguage(verb: string, preferredLanguage?: 'e
   return null;
 }
 
-export async function getExistingConjugations(infinitive: string, language: 'en' | 'fr' | 'es') {
-  const match = await prisma.contentItem.findFirst({
+/**
+ * Fetches conjugation data with audio availability in one flow.
+ * Pulls content from content_items.metadata and enriches with audio status
+ * from the conjugations table (populated by the Airflow TTS pipeline).
+ */
+export async function getExistingConjugations(infinitive: string, language: 'en' | 'fr' | 'es'): Promise<FullConjugationData | null> {
+  const normalizedInfinitive = infinitive.toLowerCase().trim();
+
+  // 1. Fetch the content item with conjugation data
+  const contentItem = await prisma.contentItem.findFirst({
     where: {
       contentType: 'VERB',
       language: { iso_code: language },
       metadata: {
         path: ['infinitive'],
-        equals: infinitive.toLowerCase().trim(),
+        equals: normalizedInfinitive,
       },
     },
   });
 
-  if (match) {
-    return match.metadata as unknown as FullConjugationData;
+  if (!contentItem) {
+    return null;
   }
-  return null;
+
+  const data = contentItem.metadata as unknown as FullConjugationData;
+
+  const variants = [normalizedInfinitive];
+  if (language === 'en') {
+    if (normalizedInfinitive.startsWith('to ')) {
+      variants.push(normalizedInfinitive.slice(3));
+    } else {
+      variants.push(`to ${normalizedInfinitive}`);
+    }
+  }
+
+  // 2. Fetch audio availability from conjugations table
+  const audioData = await prisma.$queryRaw<
+    Array<{
+      display_form: string;
+      pronoun_label: string;
+      tense_name: string;
+      has_audio: boolean;
+      audio_file_key: string | null;
+    }>
+  >`
+    SELECT 
+      c.display_form,
+      p.label as pronoun_label,
+      t.tense_name,
+      COALESCE(c.has_audio, false) as has_audio,
+      c.audio_file_key
+    FROM conjugations c
+    JOIN verb_translations v ON c.verb_translation_id = v.id
+    JOIN languages l ON v.language_id = l.id
+    JOIN pronouns p ON c.pronoun_id = p.id
+    JOIN tenses t ON c.tense_id = t.id
+    WHERE LOWER(v.word) = ANY(${variants})
+      AND l.iso_code = ${language}
+  `;
+
+  // 3. If no audio data exists, return the raw data
+  if (audioData.length === 0) {
+    return data;
+  }
+
+  // 4. Build lookup map and enrich the data with audio status
+  // Simple normalization for matching keys
+  const normalizeKey = (s: string) => s.trim().toLowerCase();
+
+  const audioMap = new Map<string, { has_audio: boolean; audio_file_key: string | null }>();
+
+  for (const row of audioData) {
+    // Key: tense::pronoun::text
+    const exactKey = `${normalizeKey(row.tense_name)}::${normalizeKey(row.pronoun_label)}::${normalizeKey(row.display_form)}`;
+
+    // Also support fallback without pronoun if needed, but primarily exact matches
+    // We include audio_file_key exactly as it comes from DB
+    audioMap.set(exactKey, {
+      has_audio: row.has_audio,
+      audio_file_key: row.audio_file_key
+    });
+  }
+
+  return {
+    ...data,
+    tenses: data.tenses.map((tense) => ({
+      ...tense,
+      items: tense.items.map((item) => {
+        const tKey = normalizeKey(tense.tense_name);
+        const pKey = normalizeKey(item.pronoun);
+        const fKey = normalizeKey(item.text);
+
+        const exactKey = `${tKey}::${pKey}::${fKey}`;
+        let audioInfo = audioMap.get(exactKey);
+
+        // Fallback for English: some JSON has pronoun in text field (e.g., "I come" vs "come")
+        if (!audioInfo && language === 'en') {
+          const lowerText = item.text.toLowerCase();
+          const lowerPronoun = item.pronoun.toLowerCase();
+          if (lowerText.startsWith(lowerPronoun + ' ')) {
+            const strippedText = item.text.slice(item.pronoun.length + 1).trim();
+            const strippedKey = `${tKey}::${pKey}::${normalizeKey(strippedText)}`;
+            audioInfo = audioMap.get(strippedKey);
+          }
+        }
+
+        return audioInfo
+          ? {
+            ...item,
+            has_audio: audioInfo.has_audio,
+            audio_file_key: audioInfo.audio_file_key ?? undefined
+          }
+          : item;
+      }),
+    })),
+  };
 }
+
 
 // Reverse lookup: check if any conjugated form matches the input
 export async function findConjugatedVerb(form: string, preferredLanguage?: 'en' | 'fr' | 'es') {
