@@ -3,10 +3,7 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/utils/auth';
 import { prisma } from '@/utils/prismaDB';
-import { ChartAreaInteractive } from "@/components/chart-area-interactive";
-import { DataTable } from "@/components/data-table";
-import { SectionCards } from "@/components/section-cards";
-import data from "./data.json";
+
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -47,8 +44,7 @@ export default async function DashboardPage() {
           <p className="text-muted-foreground">Here is what's happening with your language learning today.</p>
         </div>
 
-        {/* Existing Section Cards (assuming they are relevant stats) */}
-        <SectionCards />
+
 
         <div className="px-4 lg:px-6 space-y-6">
 
@@ -96,14 +92,7 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* Activity History Graph - kept from original */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Activity History</h3>
-            <ChartAreaInteractive />
-          </div>
 
-          {/* Data Table - kept from original */}
-          <DataTable data={data} />
         </div>
       </div>
     </div>
