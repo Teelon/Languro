@@ -9,6 +9,7 @@ import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import Logo from "@/components/Common/Logo";
 
 const ResetPassword = ({ token }: { token: string }) => {
   const [data, setData] = useState({
@@ -94,22 +95,7 @@ const ResetPassword = ({ token }: { token: string }) => {
             <Card className="mx-auto max-w-[500px] border-none shadow-none text-center">
               <CardContent className="p-4 md:p-12">
                 <div className="mb-10 text-center">
-                  <Link href="/" className="mx-auto inline-block max-w-[160px]">
-                    <Image
-                      src="/images/logo/logo.svg"
-                      alt="logo"
-                      width={140}
-                      height={30}
-                      className="dark:hidden"
-                    />
-                    <Image
-                      src="/images/logo/logo-white.svg"
-                      alt="logo"
-                      width={140}
-                      height={30}
-                      className="hidden dark:block"
-                    />
-                  </Link>
+                  <Logo className="mx-auto" />
                 </div>
 
                 <h2 className="mb-4 text-2xl font-bold text-dark dark:text-white sm:text-3xl">

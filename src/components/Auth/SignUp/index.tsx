@@ -11,6 +11,7 @@ import Loader from "@/components/Common/Loader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import Logo from "@/components/Common/Logo";
 
 const SignUp = () => {
   const router = useRouter();
@@ -52,22 +53,7 @@ const SignUp = () => {
             <Card className="mx-auto max-w-[500px] border-none shadow-none text-center">
               <CardContent className="p-4 md:p-12">
                 <div className="mb-10 text-center">
-                  <Link href="/" className="mx-auto inline-block max-w-[160px]">
-                    <Image
-                      src="/images/logo/logo.svg"
-                      alt="logo"
-                      width={140}
-                      height={30}
-                      className="dark:hidden"
-                    />
-                    <Image
-                      src="/images/logo/logo-white.svg"
-                      alt="logo"
-                      width={140}
-                      height={30}
-                      className="hidden dark:block"
-                    />
-                  </Link>
+                  <Logo className="mx-auto" />
                 </div>
 
                 <SocialSignIn />

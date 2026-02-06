@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "../Common/Logo";
 
 const Footer = () => {
   return (
@@ -7,9 +8,7 @@ const Footer = () => {
         <div className="-mx-4 flex flex-wrap">
           <div className="w-full px-4 md:w-1/2 lg:w-4/12 xl:w-5/12">
             <div className="mb-12 max-w-[360px] lg:mb-16">
-              <Link href="/" className="mb-8 inline-block text-2xl font-bold text-slate-900 dark:text-white">
-                Languro
-              </Link>
+              <Logo className="mb-8" />
               <p className="mb-9 text-base leading-relaxed text-slate-600 dark:text-slate-400">
                 The serious language learning engine for real proficiency.
               </p>

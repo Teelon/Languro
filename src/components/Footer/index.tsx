@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import Logo from "../Common/Logo";
 
 const Footer = () => {
   return (
@@ -11,14 +12,7 @@ const Footer = () => {
         <div className="-mx-4 flex flex-wrap">
           <div className="w-full px-4 sm:w-1/2 md:w-1/2 lg:w-4/12 xl:w-3/12">
             <div className="mb-10 w-full">
-              <Link href="/" className="mb-6 flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shadow-lg">
-                  <span className="text-lg font-bold text-slate-900 leading-none mt-0.5">L</span>
-                </div>
-                <span className="text-xl font-black tracking-tight text-white">
-                  LAN<span className="text-primary">GURO</span>
-                </span>
-              </Link>
+              <Logo className="mb-6 dark" />
               <p className="mb-8 max-w-[270px] text-base text-gray-7">
                 The Architecture of Rigor. We build tools for those who take language learning seriously.
               </p>
