@@ -487,3 +487,28 @@ model UserVocabulary {
   @@index([userId, lastSeenAt])
   @@map("user_vocabulary")
 }
+
+// Database View for full conjugation data (read-only)
+model VwFullConjugation {
+  // Composite key for Prisma (view has no real PK)
+  conjugationId     Int      @id @map("conjugation_id")
+  verbTranslationId Int      @map("verb_translation_id")
+  infinitive        String
+  language          String
+  concept           String?
+  definition        String?
+  tenseId           Int      @map("tense_id")
+  tenseName         String   @map("tense_name")
+  mood              String?
+  pronounId         Int      @map("pronoun_id")
+  pronoun           String
+  text              String
+  auxiliary         String?
+  root              String?
+  ending            String?
+  hasAudio          Boolean  @map("has_audio")
+  audioFileKey      String?  @map("audio_file_key")
+  voteScore         Int      @map("vote_score")
+
+  @@map("vw_full_conjugations")
+}

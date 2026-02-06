@@ -12,7 +12,7 @@ export async function findVerbInAnyLanguage(verb: string, preferredLanguage?: 'e
     searchWords.push(`to ${normalized}`);
   }
 
-  // 1. Search VerbTranslation table (Canonical Source)
+  // Search VerbTranslation table (Canonical Source)
   const translationMatch = await prisma.verbTranslation.findFirst({
     where: {
       AND: [
@@ -23,60 +23,22 @@ export async function findVerbInAnyLanguage(verb: string, preferredLanguage?: 'e
       ]
     },
     include: {
-      language: true,
-      contentItems: {
-        where: { contentType: 'VERB' },
-        take: 1
-      }
+      language: true
     }
   });
 
   if (translationMatch) {
-    let contentItem: typeof translationMatch.contentItems[0] | null = translationMatch.contentItems[0];
-
-    // Fallback: If not linked via relation, search ContentItem by canonical word
-    if (!contentItem) {
-      // For English, we unfortunately have a mix of "to run" and "run" in metadata.
-      // We must check both variations if the canonical word starts with "to ".
-      const searchValues = [translationMatch.word];
-      if (translationMatch.language.iso_code === 'en' && translationMatch.word.toLowerCase().startsWith('to ')) {
-        searchValues.push(translationMatch.word.slice(3)); // "run"
-      }
-
-      contentItem = await prisma.contentItem.findFirst({
-        where: {
-          contentType: 'VERB',
-          languageId: translationMatch.language.id,
-          OR: searchValues.map(val => ({
-            metadata: {
-              path: ['infinitive'],
-              equals: val
-            }
-          }))
-        }
-      });
-    }
-
-    if (contentItem) {
-      // IMPORTANT: Use the infinitive from ContentItem metadata for consistency
-      // because getExistingConjugations searches by this value, not VerbTranslation.word
-      const metaInfinitive = (contentItem.metadata as any)?.infinitive || translationMatch.word;
-      return {
-        id: contentItem.id,
-        language: translationMatch.language.iso_code as 'en' | 'fr' | 'es',
-        infinitive: metaInfinitive,
-        data: contentItem.metadata as unknown as FullConjugationData
-      };
-    }
+    // Return the infinitive as stored in verb_translations
+    // getExistingConjugations will handle English "to " prefix variations
+    return {
+      language: translationMatch.language.iso_code as 'en' | 'fr' | 'es',
+      infinitive: translationMatch.word
+    };
   }
-
-  // If strict language preference is set, we stop here (except for potential cross-lang suggestions which are handled by the caller or separate fuzzy search).
-  // But strictly speaking, if we didn't find it in the preferred language, we return null.
-  // Exception: If NO preferred language was set, we might have missed it if it was a different language?
-  // The query above handles "any language" if preferredLanguage is undefined.
 
   return null;
 }
+
 
 /**
  * Fetches conjugation data with audio availability in one flow.
@@ -86,24 +48,7 @@ export async function findVerbInAnyLanguage(verb: string, preferredLanguage?: 'e
 export async function getExistingConjugations(infinitive: string, language: 'en' | 'fr' | 'es'): Promise<FullConjugationData | null> {
   const normalizedInfinitive = infinitive.toLowerCase().trim();
 
-  // 1. Fetch the content item with conjugation data
-  const contentItem = await prisma.contentItem.findFirst({
-    where: {
-      contentType: 'VERB',
-      language: { iso_code: language },
-      metadata: {
-        path: ['infinitive'],
-        equals: normalizedInfinitive,
-      },
-    },
-  });
-
-  if (!contentItem) {
-    return null;
-  }
-
-  const data = contentItem.metadata as unknown as FullConjugationData;
-
+  // Build search variants for English "to " prefix
   const variants = [normalizedInfinitive];
   if (language === 'en') {
     if (normalizedInfinitive.startsWith('to ')) {
@@ -113,88 +58,70 @@ export async function getExistingConjugations(infinitive: string, language: 'en'
     }
   }
 
-  // 2. Fetch audio availability from conjugations table
-  const audioData = await prisma.$queryRaw<
-    Array<{
-      display_form: string;
-      pronoun_label: string;
-      tense_name: string;
-      has_audio: boolean;
-      audio_file_key: string | null;
-    }>
-  >`
-    SELECT 
-      c.display_form,
-      p.label as pronoun_label,
-      t.tense_name,
-      COALESCE(c.has_audio, false) as has_audio,
-      c.audio_file_key
-    FROM conjugations c
-    JOIN verb_translations v ON c.verb_translation_id = v.id
-    JOIN languages l ON v.language_id = l.id
-    JOIN pronouns p ON c.pronoun_id = p.id
-    JOIN tenses t ON c.tense_id = t.id
-    WHERE LOWER(v.word) = ANY(${variants})
-      AND l.iso_code = ${language}
-  `;
+  // Query the view for all conjugation data
+  const rows = await prisma.vwFullConjugation.findMany({
+    where: {
+      language,
+      infinitive: { in: variants, mode: 'insensitive' }
+    }
+  });
 
-  // 3. If no audio data exists, return the raw data
-  if (audioData.length === 0) {
-    return data;
+  if (rows.length === 0) {
+    return null;
   }
 
-  // 4. Build lookup map and enrich the data with audio status
-  // Simple normalization for matching keys
-  const normalizeKey = (s: string) => s.trim().toLowerCase();
+  // Get verb info from first row
+  const firstRow = rows[0];
+  const verbInfinitive = firstRow.infinitive;
+  const concept = firstRow.concept || verbInfinitive;
+  const definition = firstRow.definition || '';
 
-  const audioMap = new Map<string, { has_audio: boolean; audio_file_key: string | null }>();
+  // Group by tense
+  const tenseMap = new Map<string, {
+    tense_name: string;
+    mood?: string;
+    items: FullConjugationData['tenses'][0]['items'];
+  }>();
 
-  for (const row of audioData) {
-    // Key: tense::pronoun::text
-    const exactKey = `${normalizeKey(row.tense_name)}::${normalizeKey(row.pronoun_label)}::${normalizeKey(row.display_form)}`;
+  for (const row of rows) {
+    const tenseKey = `${row.tenseName}::${row.mood || ''}`;
 
-    // Also support fallback without pronoun if needed, but primarily exact matches
-    // We include audio_file_key exactly as it comes from DB
-    audioMap.set(exactKey, {
-      has_audio: row.has_audio,
-      audio_file_key: row.audio_file_key
+    if (!tenseMap.has(tenseKey)) {
+      tenseMap.set(tenseKey, {
+        tense_name: row.tenseName,
+        mood: row.mood || undefined,
+        items: []
+      });
+    }
+
+    const tense = tenseMap.get(tenseKey)!;
+    tense.items.push({
+      pronoun: row.pronoun,
+      text: row.text,
+      auxiliary: row.auxiliary || undefined,
+      root: row.root || undefined,
+      ending: row.ending || undefined,
+      pronoun_id: row.pronounId,
+      tense_id: row.tenseId,
+      has_audio: row.hasAudio,
+      audio_file_key: row.audioFileKey || undefined,
+      conjugation_id: row.conjugationId,
+      vote_score: row.voteScore
     });
   }
 
   return {
-    ...data,
-    tenses: data.tenses.map((tense) => ({
-      ...tense,
-      items: tense.items.map((item) => {
-        const tKey = normalizeKey(tense.tense_name);
-        const pKey = normalizeKey(item.pronoun);
-        const fKey = normalizeKey(item.text);
-
-        const exactKey = `${tKey}::${pKey}::${fKey}`;
-        let audioInfo = audioMap.get(exactKey);
-
-        // Fallback for English: some JSON has pronoun in text field (e.g., "I come" vs "come")
-        if (!audioInfo && language === 'en') {
-          const lowerText = item.text.toLowerCase();
-          const lowerPronoun = item.pronoun.toLowerCase();
-          if (lowerText.startsWith(lowerPronoun + ' ')) {
-            const strippedText = item.text.slice(item.pronoun.length + 1).trim();
-            const strippedKey = `${tKey}::${pKey}::${normalizeKey(strippedText)}`;
-            audioInfo = audioMap.get(strippedKey);
-          }
-        }
-
-        return audioInfo
-          ? {
-            ...item,
-            has_audio: audioInfo.has_audio,
-            audio_file_key: audioInfo.audio_file_key ?? undefined
-          }
-          : item;
-      }),
-    })),
+    concept,
+    definition,
+    infinitive: verbInfinitive,
+    language,
+    metadata: {
+      source: 'db-cache'
+    },
+    tenses: Array.from(tenseMap.values())
   };
 }
+
 
 
 // Reverse lookup: check if any conjugated form matches the input
@@ -220,36 +147,10 @@ export async function findConjugatedVerb(form: string, preferredLanguage?: 'en' 
   });
 
   if (match && match.verb_translation) {
-    // We need to find the ContentItem to get the correct metadata infinitive
-    // (to match what getExistingConjugations expects)
-    const langId = match.verb_translation.language.id;
-    const translationWord = match.verb_translation.word;
-
-    // Build search values (handle English "to " prefix)
-    const searchValues = [translationWord];
-    if (match.verb_translation.language.iso_code === 'en' && translationWord.toLowerCase().startsWith('to ')) {
-      searchValues.push(translationWord.slice(3));
-    }
-
-    const contentItem = await prisma.contentItem.findFirst({
-      where: {
-        contentType: 'VERB',
-        languageId: langId,
-        OR: searchValues.map(val => ({
-          metadata: {
-            path: ['infinitive'],
-            equals: val
-          }
-        }))
-      }
-    });
-
-    // Use metadata infinitive if found, else fallback to translation word
-    const infinitive = (contentItem?.metadata as any)?.infinitive || translationWord;
-
+    // getExistingConjugations now uses the view which handles "to " prefix variations
     return {
       language: match.verb_translation.language.iso_code as 'en' | 'fr' | 'es',
-      infinitive
+      infinitive: match.verb_translation.word
     };
   }
 
