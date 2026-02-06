@@ -22,6 +22,8 @@ export function ReadingSession({ reading, userId }: ReadingSessionProps) {
   // Use alignment from reading lesson
   const alignment = (reading.alignment as any) || [];
 
+  const languageCode = (reading.contentItem?.language?.iso_code || 'es') as 'en' | 'fr' | 'es';
+
   const handleLessonStart = () => {
     setStep('reading');
   };
@@ -55,6 +57,7 @@ export function ReadingSession({ reading, userId }: ReadingSessionProps) {
       alignment={alignment}
       audioUrl={reading.audioUrl}
       onComplete={handleComplete}
+      language={languageCode}
     />
   );
 }

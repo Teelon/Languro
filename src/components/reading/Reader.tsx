@@ -26,9 +26,10 @@ interface ReaderProps {
   alignment: AlignmentPoint[]; // Timepoints
   audioUrl: string | null;
   onComplete: () => void;
+  language?: 'en' | 'fr' | 'es';
 }
 
-export function Reader({ title, content, alignment, audioUrl, onComplete }: ReaderProps) {
+export function Reader({ title, content, alignment, audioUrl, onComplete, language = 'es' }: ReaderProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -141,17 +142,15 @@ export function Reader({ title, content, alignment, audioUrl, onComplete }: Read
     setCurrentTime(value[0]);
   };
 
-  const handleWordClick = (token: string, tokenIndex: number) => {
-    // If audio exists and we have alignment, try to seek
-    const point = tokenToAlignmentMap.get(tokenIndex);
-    if (point && audioRef.current && audioUrl) {
-      audioRef.current.currentTime = point.start;
-      setCurrentTime(point.start);
-      if (!isPlaying) {
-        audioRef.current.play();
-        setIsPlaying(true);
-      }
+  const handleWordClick = (e: React.MouseEvent, token: string, tokenIndex: number) => {
+    // If audio is playing, pause it to allow interaction
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
+
+    // Trigger context menu (which allows Search, Translate, etc.)
+    handleContextMenu(e, token, tokenIndex);
   };
 
   const handleContextMenu = (e: React.MouseEvent | React.TouchEvent, token: string, index: number) => {
@@ -271,7 +270,7 @@ export function Reader({ title, content, alignment, audioUrl, onComplete }: Read
                   index={i}
                   isActive={isActive}
                   alignPoint={alignPoint}
-                  onClick={() => isWord && handleWordClick(token, i)}
+                  onClick={(e) => isWord && handleWordClick(e, token, i)}
                   onContextMenu={(e: React.MouseEvent) => isWord && handleContextMenu(e, token, i)}
                 />
               );
@@ -369,6 +368,7 @@ export function Reader({ title, content, alignment, audioUrl, onComplete }: Read
             <ConjugatorSearch
               initialQuery={selectedWord || ''}
               embedded
+              initialLanguage={language}
               onData={(data) => setConjugationData(data)}
             />
 

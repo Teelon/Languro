@@ -18,7 +18,11 @@ export class ReadingService {
     const reading = await prisma.readingLesson.findUnique({
       where: { id },
       include: {
-        contentItem: true,
+        contentItem: {
+          include: {
+            language: true
+          }
+        },
         progress: {
           where: { userId }
         }

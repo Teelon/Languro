@@ -55,6 +55,7 @@ interface ConjugatorSearchProps {
     onData: (data: FullConjugationData) => void;
     initialQuery?: string;
     embedded?: boolean;
+    initialLanguage?: 'en' | 'fr' | 'es';
 }
 
 const LANGUAGE_FACTS = [
@@ -72,9 +73,9 @@ const LANGUAGE_FACTS = [
     "French was the official language of England for over 300 years."
 ];
 
-export default function ConjugatorSearch({ onData, initialQuery, embedded }: ConjugatorSearchProps) {
+export default function ConjugatorSearch({ onData, initialQuery, embedded, initialLanguage = 'es' }: ConjugatorSearchProps) {
     const [verb, setVerb] = useState(initialQuery || '');
-    const [language, setLanguage] = useState<'en' | 'fr' | 'es'>('es');
+    const [language, setLanguage] = useState<'en' | 'fr' | 'es'>(initialLanguage);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [notification, setNotification] = useState('');
