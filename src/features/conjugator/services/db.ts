@@ -5,55 +5,75 @@ import { FullConjugationData } from '../types';
 export async function findVerbInAnyLanguage(verb: string, preferredLanguage?: 'en' | 'fr' | 'es') {
   const normalized = verb.toLowerCase().trim();
 
-  // If preferred language is set, try that first
-  if (preferredLanguage) {
-    const match = await prisma.contentItem.findFirst({
-      where: {
-        contentType: 'VERB',
-        metadata: {
-          path: ['infinitive'],
-          equals: normalized,
-        },
-        language: {
-          iso_code: preferredLanguage
+  // Logic to handle English "to " prefix
+  const searchWords = [normalized];
+  // If we suspect English (either preferred or searching all), add "to " variant if missing
+  if ((!preferredLanguage || preferredLanguage === 'en') && !normalized.startsWith('to ')) {
+    searchWords.push(`to ${normalized}`);
+  }
+
+  // 1. Search VerbTranslation table (Canonical Source)
+  const translationMatch = await prisma.verbTranslation.findFirst({
+    where: {
+      AND: [
+        preferredLanguage ? { language: { iso_code: preferredLanguage } } : {},
+        {
+          word: { in: searchWords, mode: 'insensitive' }
         }
-      },
-      include: {
-        language: true,
-      },
-    });
-    if (match) {
+      ]
+    },
+    include: {
+      language: true,
+      contentItems: {
+        where: { contentType: 'VERB' },
+        take: 1
+      }
+    }
+  });
+
+  if (translationMatch) {
+    let contentItem: typeof translationMatch.contentItems[0] | null = translationMatch.contentItems[0];
+
+    // Fallback: If not linked via relation, search ContentItem by canonical word
+    if (!contentItem) {
+      // For English, we unfortunately have a mix of "to run" and "run" in metadata.
+      // We must check both variations if the canonical word starts with "to ".
+      const searchValues = [translationMatch.word];
+      if (translationMatch.language.iso_code === 'en' && translationMatch.word.toLowerCase().startsWith('to ')) {
+        searchValues.push(translationMatch.word.slice(3)); // "run"
+      }
+
+      contentItem = await prisma.contentItem.findFirst({
+        where: {
+          contentType: 'VERB',
+          languageId: translationMatch.language.id,
+          OR: searchValues.map(val => ({
+            metadata: {
+              path: ['infinitive'],
+              equals: val
+            }
+          }))
+        }
+      });
+    }
+
+    if (contentItem) {
+      // IMPORTANT: Use the infinitive from ContentItem metadata for consistency
+      // because getExistingConjugations searches by this value, not VerbTranslation.word
+      const metaInfinitive = (contentItem.metadata as any)?.infinitive || translationMatch.word;
       return {
-        id: match.id,
-        language: match.language.iso_code as 'en' | 'fr' | 'es',
-        infinitive: (match.metadata as any).infinitive,
-        data: match.metadata as unknown as FullConjugationData // approximate
+        id: contentItem.id,
+        language: translationMatch.language.iso_code as 'en' | 'fr' | 'es',
+        infinitive: metaInfinitive,
+        data: contentItem.metadata as unknown as FullConjugationData
       };
     }
   }
 
-  // Fallback to any language
-  const match = await prisma.contentItem.findFirst({
-    where: {
-      contentType: 'VERB',
-      metadata: {
-        path: ['infinitive'],
-        equals: normalized,
-      },
-    },
-    include: {
-      language: true,
-    },
-  });
-
-  if (match) {
-    return {
-      id: match.id,
-      language: match.language.iso_code as 'en' | 'fr' | 'es',
-      infinitive: (match.metadata as any).infinitive,
-      data: match.metadata as unknown as FullConjugationData
-    };
-  }
+  // If strict language preference is set, we stop here (except for potential cross-lang suggestions which are handled by the caller or separate fuzzy search).
+  // But strictly speaking, if we didn't find it in the preferred language, we return null.
+  // Exception: If NO preferred language was set, we might have missed it if it was a different language?
+  // The query above handles "any language" if preferredLanguage is undefined.
 
   return null;
 }
@@ -180,40 +200,56 @@ export async function getExistingConjugations(infinitive: string, language: 'en'
 // Reverse lookup: check if any conjugated form matches the input
 export async function findConjugatedVerb(form: string, preferredLanguage?: 'en' | 'fr' | 'es') {
   const normalized = form.toLowerCase().trim();
-  const langFilter = preferredLanguage ? Prisma.sql`AND l.iso_code = ${preferredLanguage}` : Prisma.sql``;
 
-  // Use the same CTE strategy for precise lookup
-  const results = await prisma.$queryRaw<Array<{ infinitive: string, iso_code: string }>>`
-        WITH conjugated_forms AS (
-          SELECT 
-            c.metadata->>'infinitive' as infinitive,
-            l.iso_code,
-            jsonb_array_elements(c.metadata->'tenses') -> 'items' as conjugations
-          FROM "content_items" c
-          JOIN "languages" l ON c."languageId" = l.id
-          WHERE c."contentType" = 'VERB'
-            ${langFilter}
-        ),
-        forms_expanded AS (
-          SELECT 
-            infinitive,
-            iso_code,
-            value->>'text' as display_form
-          FROM conjugated_forms,
-          jsonb_array_elements(conjugations)
-        )
-        SELECT 
-            infinitive,
-            iso_code
-        FROM forms_expanded
-        WHERE lower(display_form) = ${normalized}
-        LIMIT 1
-    `;
+  // Search directly in the conjugations table
+  // We join with VerbTranslation to get the infinitive and Language to filter
+  const match = await prisma.conjugation.findFirst({
+    where: {
+      display_form: { equals: normalized, mode: 'insensitive' },
+      verb_translation: {
+        language: preferredLanguage ? { iso_code: preferredLanguage } : undefined
+      }
+    },
+    include: {
+      verb_translation: {
+        include: {
+          language: true
+        }
+      }
+    }
+  });
 
-  if (results.length > 0) {
+  if (match && match.verb_translation) {
+    // We need to find the ContentItem to get the correct metadata infinitive
+    // (to match what getExistingConjugations expects)
+    const langId = match.verb_translation.language.id;
+    const translationWord = match.verb_translation.word;
+
+    // Build search values (handle English "to " prefix)
+    const searchValues = [translationWord];
+    if (match.verb_translation.language.iso_code === 'en' && translationWord.toLowerCase().startsWith('to ')) {
+      searchValues.push(translationWord.slice(3));
+    }
+
+    const contentItem = await prisma.contentItem.findFirst({
+      where: {
+        contentType: 'VERB',
+        languageId: langId,
+        OR: searchValues.map(val => ({
+          metadata: {
+            path: ['infinitive'],
+            equals: val
+          }
+        }))
+      }
+    });
+
+    // Use metadata infinitive if found, else fallback to translation word
+    const infinitive = (contentItem?.metadata as any)?.infinitive || translationWord;
+
     return {
-      language: results[0].iso_code as 'en' | 'fr' | 'es',
-      infinitive: results[0].infinitive
+      language: match.verb_translation.language.iso_code as 'en' | 'fr' | 'es',
+      infinitive
     };
   }
 
@@ -280,30 +316,32 @@ export async function findVerbFuzzyCandidates(
 ): Promise<FuzzyCandidate[]> {
   const normalized = word.toLowerCase().trim();
 
-  let searchWord = normalized;
-  if (preferredLanguage === 'en' && searchWord.startsWith('to ')) {
-    searchWord = searchWord.slice(3);
-  }
+  // If we are searching relative to a specific language, we might want to adjust the search term
+  // e.g. if user types "run" and lang is EN, we might want to fuzzy match "to run" too.
+  // But pg_trgm similarity logic on "run" vs "to run" matches moderately well. 
+  // Let's stick to the raw input but ensure we strip "to " if user provided it redundantly?
+  // Actually, standardizing on the DB content is better.
 
   const langFilter = preferredLanguage ? Prisma.sql`AND l.iso_code = ${preferredLanguage}` : Prisma.sql``;
 
-  const candidates = await prisma.$queryRaw<Array<{ infinitive: string, iso_code: string, sim: number }>>`
+  // Query verb_translations
+  const candidates = await prisma.$queryRaw<Array<{ word: string, iso_code: string, sim: number }>>`
         SELECT 
-            c.metadata->>'infinitive' as infinitive,
+            v.word,
             l.iso_code,
-            similarity(c.metadata->>'infinitive', ${searchWord}) as sim
-        FROM "content_items" c
-        JOIN "languages" l ON c."languageId" = l.id
-        WHERE c."contentType" = 'VERB'
+            similarity(v.word, ${normalized}) as sim
+        FROM "verb_translations" v
+        JOIN "languages" l ON v.language_id = l.id
+        WHERE 1=1
         ${langFilter}
-        AND similarity(c.metadata->>'infinitive', ${searchWord}) >= ${threshold}
+        AND similarity(v.word, ${normalized}) >= ${threshold}
         ORDER BY sim DESC
         LIMIT ${limit}
     `;
 
   return candidates.map(c => ({
     language: c.iso_code as 'en' | 'fr' | 'es',
-    infinitive: c.infinitive,
+    infinitive: c.word,
     similarity: c.sim
   }));
 }
@@ -319,34 +357,19 @@ export async function findConjugatedVerbFuzzyCandidates(
 
   const langFilter = preferredLanguage ? Prisma.sql`AND l.iso_code = ${preferredLanguage}` : Prisma.sql``;
 
-  // We need to unnest the tenses array, then the items array within each tense
-  // to access the text property.
-  const candidates = await prisma.$queryRaw<Array<{ infinitive: string, iso_code: string, matched_form: string, sim: number }>>`
-        WITH conjugated_forms AS (
-          SELECT 
-            c.metadata->>'infinitive' as infinitive,
-            l.iso_code,
-            jsonb_array_elements(c.metadata->'tenses') -> 'items' as conjugations
-          FROM "content_items" c
-          JOIN "languages" l ON c."languageId" = l.id
-          WHERE c."contentType" = 'VERB'
-            ${langFilter}
-        ),
-        forms_expanded AS (
-          SELECT 
-            infinitive,
-            iso_code,
-            value->>'text' as display_form
-          FROM conjugated_forms,
-          jsonb_array_elements(conjugations)
-        )
+  // Query conjugations table directly
+  const candidates = await prisma.$queryRaw<Array<{ infinitive: string, iso_code: string, display_form: string, sim: number }>>`
         SELECT 
-            infinitive,
-            iso_code,
-            display_form as matched_form,
-            similarity(display_form, ${normalized}) as sim
-        FROM forms_expanded
-        WHERE similarity(display_form, ${normalized}) >= ${threshold}
+            v.word as infinitive,
+            l.iso_code,
+            c.display_form,
+            similarity(c.display_form, ${normalized}) as sim
+        FROM "conjugations" c
+        JOIN "verb_translations" v ON c.verb_translation_id = v.id
+        JOIN "languages" l ON v.language_id = l.id
+        WHERE 1=1
+        ${langFilter}
+        AND similarity(c.display_form, ${normalized}) >= ${threshold}
         ORDER BY sim DESC
         LIMIT ${limit}
     `;
@@ -354,7 +377,7 @@ export async function findConjugatedVerbFuzzyCandidates(
   return candidates.map(c => ({
     language: c.iso_code as 'en' | 'fr' | 'es',
     infinitive: c.infinitive,
-    matchedForm: c.matched_form,
+    matchedForm: c.display_form,
     similarity: c.sim
   }));
 }
