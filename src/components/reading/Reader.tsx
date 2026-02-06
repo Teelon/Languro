@@ -14,10 +14,10 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface AlignmentPoint {
-  wordIndex: number;
   word: string;
   start: number;
-  end: number;
+  wordIndex?: number; // Optional - derived from array index if missing
+  end?: number;       // Optional - calculated from next word's start if missing
 }
 
 interface ReaderProps {
@@ -44,8 +44,10 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
   const [conjugationData, setConjugationData] = useState<any | null>(null);
   const [selectedContext, setSelectedContext] = useState<string | null>(null);
   const [isAddListOpen, setIsAddListOpen] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const wasPlayingBeforeMenuRef = useRef(false);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -63,11 +65,17 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
         return;
       }
 
+      // Resume audio if it was playing before menu opened
+      if (contextMenuPos && wasPlayingBeforeMenuRef.current && audioRef.current) {
+        audioRef.current.play();
+        setIsPlaying(true);
+        wasPlayingBeforeMenuRef.current = false;
+      }
       setContextMenuPos(null);
     };
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
-  }, []);
+  }, [contextMenuPos]);
 
   // Parse words from content to render spans
   // Ideally, 'content' matches the words in alignment.
@@ -90,6 +98,18 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
   // Non-whitespace tokens are indexed.
   // So we can map token index -> vocabulary word index -> alignment.
 
+  // Normalize alignment data - add wordIndex if missing
+  const normalizedAlignment = useMemo(() => {
+    if (!alignment || alignment.length === 0) return [];
+
+    return alignment.map((point, idx) => ({
+      ...point,
+      wordIndex: point.wordIndex ?? idx,
+      // Calculate end from next word's start, or add 0.5s for last word
+      end: point.end ?? (alignment[idx + 1]?.start ?? point.start + 0.5)
+    }));
+  }, [alignment]);
+
   const tokenToAlignmentMap = useMemo(() => {
     const map = new Map<number, AlignmentPoint>();
     let wordIdx = 0;
@@ -97,7 +117,7 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
       if (!/^\s+$/.test(token) && token.length > 0) {
         // This corresponds to wordIdx
         // Find alignment for this wordIdx
-        const point = alignment?.find(p => p.wordIndex === wordIdx);
+        const point = normalizedAlignment.find(p => p.wordIndex === wordIdx);
         if (point) {
           map.set(i, point);
         }
@@ -105,7 +125,7 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
       }
     });
     return map;
-  }, [tokens, alignment]);
+  }, [tokens, normalizedAlignment]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -142,15 +162,31 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
     setCurrentTime(value[0]);
   };
 
-  const handleWordClick = (e: React.MouseEvent, token: string, tokenIndex: number) => {
-    // If audio is playing, pause it to allow interaction
-    if (isPlaying && audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+  const handleSpeedChange = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = speed;
     }
+  };
 
-    // Trigger context menu (which allows Search, Translate, etc.)
-    handleContextMenu(e, token, tokenIndex);
+  const handleWordClick = (e: React.MouseEvent, token: string, tokenIndex: number) => {
+    // Check for alignment point
+    const point = tokenToAlignmentMap.get(tokenIndex);
+
+    // If we have audio and alignment, seek to the word
+    if (point && audioRef.current && audioUrl) {
+      setContextMenuPos(null); // Close menu if open
+
+      audioRef.current.currentTime = point.start;
+      setCurrentTime(point.start);
+      if (!isPlaying) {
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+    } else {
+      // Fallback: If no audio/alignment, open context menu (Search/Translate)
+      handleContextMenu(e, token, tokenIndex);
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent | React.TouchEvent, token: string, index: number) => {
@@ -159,17 +195,12 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
     if (cleanToken.trim().length > 0) {
       setSelectedWord(cleanToken);
 
-      // Find sentence? Naive approach: search '.' before and after in raw content?
-      // Better: pass the whole content and let backend extraction effectively?
-      // Or just substring some window around it.
-      // Let's attempt a simple window extraction
-      // Find token index in full text tokens array 'tokens' (which we passed)
-      // Actually we have the index 'i' in the map iterator context in the rendering loop, 
-      // but here we don't have 'i'. Wait, handleContextMenu receives 'e' and 'token'.
-      // I should update signature to receive index 'i' too.
-
-      // ... For now, let's just grab a window of text
-      // We need the index 'i' to do this properly.
+      // Pause audio if playing and remember state
+      if (isPlaying && audioRef.current) {
+        wasPlayingBeforeMenuRef.current = true;
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
 
       let clientX, clientY;
       if ('touches' in e) {
@@ -182,11 +213,9 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
       setContextMenuPos({ x: clientX, y: clientY });
 
       // Extract context (simple window for now, e.g. 10 words before and after)
-      // Ideally look for sentence delimiters
       const start = Math.max(0, index - 15);
       const end = Math.min(tokens.length, index + 15);
       const contextTokens = tokens.slice(start, end);
-      // Join and clean up
       const contextStr = contextTokens.join("").trim();
       setSelectedContext(contextStr);
     }
@@ -230,21 +259,17 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
 
   // Find active token index based on time
   const activeTokenIndex = useMemo(() => {
-    if (!alignment) return -1;
+    if (!normalizedAlignment || normalizedAlignment.length === 0) return -1;
     // Find alignment point that contains currentTime
-    const activePoint = alignment.find(p => currentTime >= p.start && currentTime < p.end);
+    const activePoint = normalizedAlignment.find(p => currentTime >= p.start && currentTime < (p.end ?? p.start + 0.5));
     if (!activePoint) return -1;
 
     // Find the token index corresponding to this alignment point
-    // We can reverse map or just search tokens again? 
-    // tokenToAlignmentMap maps token -> point.
-    // We need point -> token.
-    // Since we iterate tokens to build map, let's just find the token that maps to this point
     for (const [tIdx, p] of Array.from(tokenToAlignmentMap.entries())) {
       if (p.wordIndex === activePoint.wordIndex) return tIdx;
     }
     return -1;
-  }, [currentTime, alignment, tokenToAlignmentMap]);
+  }, [currentTime, normalizedAlignment, tokenToAlignmentMap]);
 
 
   return (
@@ -270,7 +295,7 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
                   index={i}
                   isActive={isActive}
                   alignPoint={alignPoint}
-                  onClick={(e) => isWord && handleWordClick(e, token, i)}
+                  onClick={(e: React.MouseEvent) => isWord && handleWordClick(e, token, i)}
                   onContextMenu={(e: React.MouseEvent) => isWord && handleContextMenu(e, token, i)}
                 />
               );
@@ -349,6 +374,19 @@ export function Reader({ title, content, alignment, audioUrl, onComplete, langua
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
+                {/* Playback Speed Control */}
+                <select
+                  value={playbackSpeed}
+                  onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
+                  disabled={!audioUrl}
+                  className="h-9 px-2 text-xs rounded-md border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                >
+                  <option value={0.5}>0.5x</option>
+                  <option value={0.75}>0.75x</option>
+                  <option value={1}>1x</option>
+                  <option value={1.25}>1.25x</option>
+                  <option value={1.5}>1.5x</option>
+                </select>
               </div>
 
               <Button onClick={onComplete} className="gap-2">
