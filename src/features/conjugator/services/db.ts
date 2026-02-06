@@ -160,42 +160,124 @@ export async function findConjugatedVerb(form: string, preferredLanguage?: 'en' 
 export async function saveConjugations(data: FullConjugationData) {
   if (!data.language || !data.infinitive) return false;
 
-  const lang = await prisma.language.findUnique({ where: { iso_code: data.language } });
-  if (!lang) return false;
-
-  // Use a unique constraint if possible, but we don't have one for (lang, contentType, infinitive)
-  // We can just query and update manually.
-  const existing = await prisma.contentItem.findFirst({
-    where: {
-      contentType: 'VERB',
-      languageId: lang.id,
-      metadata: {
-        path: ['infinitive'],
-        equals: data.infinitive
-      }
-    }
-  });
-
   try {
-    if (existing) {
-      await prisma.contentItem.update({
-        where: { id: existing.id },
-        data: { metadata: data as any }
-      });
-    } else {
-      // Need verbTranslationId? Schema says optional. 
-      // We'll leave it null for now or implement logic to find/create VerbTranslation if strict.
-      await prisma.contentItem.create({
-        data: {
-          contentType: 'VERB',
-          languageId: lang.id,
-          metadata: data as any,
+    const lang = await prisma.language.findUnique({ where: { iso_code: data.language } });
+    if (!lang) {
+      console.error(`Language not found: ${data.language}`);
+      return false;
+    }
+
+    // 1. Handle VerbConcept (Optional)
+    let conceptId: number | null = null;
+    if (data.concept) {
+      const concept = await prisma.verbConcept.upsert({
+        where: { concept_name: data.concept },
+        update: { definition: data.definition },
+        create: {
+          concept_name: data.concept,
+          definition: data.definition
         }
       });
+      conceptId = concept.id;
     }
+
+    // 2. Handle VerbTranslation (Canonical Source)
+    const verbTranslation = await prisma.verbTranslation.upsert({
+      where: {
+        language_id_word: {
+          language_id: lang.id,
+          word: data.infinitive
+        }
+      },
+      update: {
+        concept_id: conceptId
+      },
+      create: {
+        language_id: lang.id,
+        word: data.infinitive,
+        concept_id: conceptId
+      }
+    });
+
+    // 3. Process Tenses and Conjugations
+    // We execute these in sequence to avoid race conditions on creation, though strictly sequential isn't required for correctness
+    // Using a transaction for the batch might be better for consistency, but slightly more complex logic for lookups.
+    // Given the low volume (one-off generation), simple awaits are fine.
+
+    for (const tenseData of data.tenses) {
+      // Find or Create Tense
+      // normalize tense name if needed? For now strict match.
+      let tense = await prisma.tense.findFirst({
+        where: {
+          language_id: lang.id,
+          tense_name: { equals: tenseData.tense_name, mode: 'insensitive' },
+          mood: { equals: tenseData.mood || 'Indicative', mode: 'insensitive' }
+        }
+      });
+
+      if (!tense) {
+        tense = await prisma.tense.create({
+          data: {
+            language_id: lang.id,
+            tense_name: tenseData.tense_name,
+            mood: tenseData.mood || 'Indicative',
+            category_id: null // Unknown category for auto-generated tenses
+          }
+        });
+      }
+
+      for (const item of tenseData.items) {
+        // Find Pronoun - We do NOT create pronouns automatically as they should be static seed data.
+        // Try exact match first, then case insensitive
+        const pronoun = await prisma.pronoun.findFirst({
+          where: {
+            language_id: lang.id,
+            label: { equals: item.pronoun, mode: 'insensitive' }
+          }
+        });
+
+        if (!pronoun) {
+          // Log warning but continue - maybe pronoun spelling differs slightly?
+          console.warn(`[saveConjugations] Pronoun not found: "${item.pronoun}" for lang ${data.language}`);
+          continue;
+        }
+
+        // Upsert Conjugation
+        await prisma.conjugation.upsert({
+          where: {
+            verb_translation_id_tense_id_pronoun_id: {
+              verb_translation_id: verbTranslation.id,
+              tense_id: tense.id,
+              pronoun_id: pronoun.id
+            }
+          },
+          update: {
+            display_form: item.text,
+            auxiliary_part: item.auxiliary,
+            root_part: item.root,
+            ending_part: item.ending,
+            // Preserve existing audio/score data if it exists, or update if we had valid new data?
+            // Usually generation doesn't have audio, but keeps text.
+            // If we re-generate, we probably want to update text.
+          },
+          create: {
+            verb_translation_id: verbTranslation.id,
+            tense_id: tense.id,
+            pronoun_id: pronoun.id,
+            display_form: item.text,
+            auxiliary_part: item.auxiliary,
+            root_part: item.root,
+            ending_part: item.ending,
+            has_audio: false,
+            vote_score: 0
+          }
+        });
+      }
+    }
+
     return true;
   } catch (e) {
-    console.error("Failed to save conjugations", e);
+    console.error("Failed to save conjugations to normalized tables", e);
     return false;
   }
 }

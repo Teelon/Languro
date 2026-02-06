@@ -137,28 +137,27 @@ export async function POST(
       });
     }
 
-    // 3. Find or Create ContentItem
-    // Check if a content item exists for this verb translation
-    let contentItem = await prisma.contentItem.findFirst({
+    // 3. Find or Create ContentItem (Upsert guarantees global singleton)
+    // This ensures that if User A and User B add the same verb simultaneously,
+    // we only create one ContentItem and one set of Drills.
+    let contentItem = await prisma.contentItem.upsert({
       where: {
-        languageId: langRecord.id,
-        contentType: 'verb',
-        verbTranslationId: verbTranslation.id
-      }
-    });
-
-    if (!contentItem) {
-      contentItem = await prisma.contentItem.create({
-        data: {
+        languageId_contentType_verbTranslationId: {
           languageId: langRecord.id,
           contentType: 'verb',
-          verbTranslationId: verbTranslation.id,
-          metadata: {
-            source: 'user-list-creation'
-          }
+          verbTranslationId: verbTranslation.id
         }
-      });
-    }
+      },
+      update: {}, // No changes if it exists
+      create: {
+        languageId: langRecord.id,
+        contentType: 'verb',
+        verbTranslationId: verbTranslation.id,
+        metadata: {
+          source: 'user-list-creation'
+        }
+      }
+    });
 
     // 4. Create UserListItem (prevent duplicates)
     try {
