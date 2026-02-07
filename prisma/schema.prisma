@@ -55,6 +55,10 @@ model User {
 
   vocabulary     UserVocabulary[]
   readingProgress ReadingProgress[]
+  
+  // Writing practice relations
+  writingPrompts     WritingPrompt[]
+  writingSubmissions WritingSubmission[]
 }
 
 model UserPreferences {
@@ -154,6 +158,9 @@ model Language {
   nativeLanguageUsers UserOnboardingProfile[] @relation("NativeLanguage")
   targetLanguageUsers UserOnboardingProfile[] @relation("TargetLanguage")
   userVocabulary      UserVocabulary[]
+  
+  // Writing practice relations
+  writingPrompts      WritingPrompt[]
 
   @@map("languages")
 }
@@ -325,6 +332,73 @@ model ReadingProgress {
 
   @@unique([userId, readingLessonId])
   @@map("reading_progress")
+}
+
+// ============================================
+// WRITING PRACTICE FEATURE
+// ============================================
+
+// Shared image pool - reduces Gemini API costs
+model WritingImage {
+  id          String   @id @default(cuid())
+  imageUrl    String   // R2 public URL
+  imageKey    String   // R2 storage key
+  difficulty  String   @db.VarChar(2) // A1, A2, B1, B2, C1, C2
+  topic       String?  // Optional category (travel, food, etc.)
+  description String?  @db.Text // AI-generated description for validation
+  usageCount  Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  prompts     WritingPrompt[]
+  
+  @@index([difficulty, isActive])
+  @@map("writing_images")
+}
+
+// Links user to a shared image for a writing prompt
+model WritingPrompt {
+  id          String   @id @default(cuid())
+  userId      String
+  imageId     String
+  languageId  Int
+  
+  promptText  String   @db.Text // "Describe what you see..."
+  createdAt   DateTime @default(now())
+  
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image       WritingImage  @relation(fields: [imageId], references: [id])
+  language    Language      @relation(fields: [languageId], references: [id])
+  submissions WritingSubmission[]
+  
+  @@index([userId])
+  @@map("writing_prompts")
+}
+
+// User's writing submission with AI corrections
+model WritingSubmission {
+  id              String   @id @default(cuid())
+  promptId        String
+  userId          String
+  
+  inputType       String   // "typed" | "handwritten"
+  originalInput   String?  @db.Text // Raw typed text
+  handwritingKey  String?  // R2 key if handwritten image uploaded
+  recognizedText  String?  @db.Text // OCR result from Gemini vision
+  
+  correctedText   String   @db.Text // Text with corrections applied
+  corrections     Json     // Array of {original, corrected, explanation, explanationNative}
+  overallFeedback Json     // {targetLanguage: "...", nativeLanguage: "..."}
+  score           Float?   // Optional accuracy score (0-100)
+  
+  createdAt       DateTime @default(now())
+  
+  prompt          WritingPrompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([promptId])
+  @@map("writing_submissions")
 }
 
 model DrillItem {

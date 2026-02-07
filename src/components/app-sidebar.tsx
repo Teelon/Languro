@@ -9,6 +9,7 @@ import {
   BookOpen,
   Languages,
   Library,
+  PenLine,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -38,6 +39,12 @@ const data = {
       title: "Reading",
       url: "/readings",
       icon: BookOpen,
+      isSection: false,
+    },
+    {
+      title: "Writing",
+      url: "/writing",
+      icon: PenLine,
       isSection: false,
     },
     {
