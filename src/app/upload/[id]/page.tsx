@@ -3,18 +3,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Camera, CheckCircle2, Loader2, Upload, XCircle } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Camera, CheckCircle2, Loader2, Upload, XCircle, RotateCw, ZoomIn, Check } from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '@/utils/canvasUtils';
 
 export default function MobileUploadPage() {
     const params = useParams();
     const sessionId = params.id as string;
 
-    const [status, setStatus] = useState<'loading' | 'pending' | 'uploading' | 'success' | 'error' | 'expired'>('loading');
+    const [status, setStatus] = useState<'loading' | 'pending' | 'cropping' | 'uploading' | 'success' | 'error' | 'expired'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
-    const [preview, setPreview] = useState<string | null>(null);
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Crop state
+    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [rotation, setRotation] = useState(0);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
     // Initial check
     useEffect(() => {
@@ -45,15 +54,31 @@ export default function MobileUploadPage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Show preview
+        // Show cropper
         const url = URL.createObjectURL(file);
-        setPreview(url);
+        setImageSrc(url);
+        setStatus('cropping');
+        setZoom(1);
+        setRotation(0);
+        setCrop({ x: 0, y: 0 });
+    };
+
+    const onCropComplete = (croppedArea: any, croppedAreaPixels: any) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    };
+
+    const handleUpload = async () => {
+        if (!imageSrc || !croppedAreaPixels) return;
+
         setStatus('uploading');
 
-        // Upload
         try {
+            const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels, rotation);
+
+            if (!croppedImageBlob) throw new Error('Failed to crop image');
+
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('image', croppedImageBlob); // Using the cropped file
 
             const res = await fetch(`/api/writing/session/${sessionId}/upload`, {
                 method: 'POST',
@@ -114,12 +139,74 @@ export default function MobileUploadPage() {
                     <p className="text-muted-foreground">
                         Your handwriting has been uploaded. You can now continue on your computer.
                     </p>
-                    {preview && (
-                        <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
-                            <Image src={preview} alt="Uploaded" fill className="object-contain" />
-                        </div>
-                    )}
                 </Card>
+            </div>
+        );
+    }
+
+    if (status === 'cropping' && imageSrc) {
+        return (
+            <div className="fixed inset-0 bg-black flex flex-col z-50">
+                <div className="relative flex-1 bg-black">
+                    <Cropper
+                        image={imageSrc}
+                        crop={crop}
+                        zoom={zoom}
+                        rotation={rotation}
+                        aspect={undefined} // Free crop
+                        onCropChange={setCrop}
+                        onCropComplete={onCropComplete}
+                        onZoomChange={setZoom}
+                        onRotationChange={setRotation}
+                    />
+                </div>
+
+                <div className="bg-background p-4 space-y-4 border-t">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <ZoomIn className="h-4 w-4 text-muted-foreground" />
+                            <Slider
+                                value={[zoom]}
+                                min={1}
+                                max={3}
+                                step={0.1}
+                                onValueChange={(value) => setZoom(value[0])}
+                                className="flex-1"
+                            />
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <RotateCw className="h-4 w-4 text-muted-foreground" />
+                            <Slider
+                                value={[rotation]}
+                                min={0}
+                                max={360}
+                                step={1}
+                                onValueChange={(value) => setRotation(value[0])}
+                                className="flex-1"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                                setStatus('pending');
+                                setImageSrc(null);
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            className="flex-1"
+                            onClick={handleUpload}
+                        >
+                            <Check className="mr-2 h-4 w-4" />
+                            Upload
+                        </Button>
+                    </div>
+                </div>
             </div>
         );
     }

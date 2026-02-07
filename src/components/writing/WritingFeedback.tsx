@@ -89,7 +89,7 @@ export function WritingFeedback({
                     )}
                     onClick={() => setSelectedCorrection(correction)}
                 >
-                    {correction.original}
+                    {originalText.slice(correction.startIndex, correction.endIndex)}
                 </span>
             );
 
