@@ -586,3 +586,14 @@ model VwFullConjugation {
 
   @@map("vw_full_conjugations")
 }
+
+model HandwritingSession {
+  id        String   @id @default(cuid())
+  status    String   @default("pending") // pending, uploaded, consumed
+  imageUrl  String?  // R2 URL
+  imageKey  String?  // R2 Key
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@map("handwriting_sessions")
+}

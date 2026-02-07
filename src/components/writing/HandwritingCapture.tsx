@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Upload, Camera, X, QrCode, Smartphone } from 'lucide-react';
+import { Upload, Camera, X, QrCode, Smartphone, Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import QRCode from 'react-qr-code';
 
 interface HandwritingCaptureProps {
     onCapture: (file: File | null) => void;
@@ -141,7 +142,15 @@ export function HandwritingCapture({ onCapture, currentFile }: HandwritingCaptur
 
             {/* QR Modal for desktop users */}
             {showQRModal && (
-                <QRCameraModal onClose={() => setShowQRModal(false)} />
+                <QRCameraModal
+                    onClose={() => setShowQRModal(false)}
+                    onSuccess={(file) => {
+                        onCapture(file);
+                        const url = URL.createObjectURL(file);
+                        setPreview(url);
+                        setShowQRModal(false);
+                    }}
+                />
             )}
         </div>
     );
@@ -149,36 +158,100 @@ export function HandwritingCapture({ onCapture, currentFile }: HandwritingCaptur
 
 /**
  * QR Code Modal for desktop-to-mobile camera bridge
- * For hackathon demo - simplified version that shows instructions
  */
-function QRCameraModal({ onClose }: { onClose: () => void }) {
+function QRCameraModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (file: File) => void }) {
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [uploadUrl, setUploadUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Create session on mount
+    useEffect(() => {
+        const createSession = async () => {
+            try {
+                const res = await fetch('/api/writing/session/create', { method: 'POST' });
+                if (!res.ok) throw new Error('Failed to create session');
+                const data = await res.json();
+                setSessionId(data.sessionId);
+
+                // Construct upload URL
+                const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+                setUploadUrl(`${baseUrl}/upload/${data.sessionId}`);
+            } catch (err) {
+                setError('Failed to generate QR code');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        createSession();
+    }, []);
+
+    // Poll for status
+    useEffect(() => {
+        if (!sessionId) return;
+
+        const pollInterval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/writing/session/${sessionId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'uploaded' && data.imageUrl) {
+                        // Download the image using proxy to avoid CORS
+                        const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(data.imageUrl)}`;
+                        const imageRes = await fetch(proxyUrl);
+                        const blob = await imageRes.blob();
+                        const file = new File([blob], 'handwriting.jpg', { type: blob.type });
+                        onSuccess(file);
+                    }
+                }
+            } catch (err) {
+                console.error('Polling error:', err);
+            }
+        }, 2000);
+
+        return () => clearInterval(pollInterval);
+    }, [sessionId, onSuccess]);
+
+
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="p-6 max-w-md mx-4 space-y-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="p-6 max-w-sm w-full space-y-6">
                 <div className="flex justify-between items-center">
-                    <h3 className="font-semibold">Use Phone Camera</h3>
+                    <h3 className="font-semibold text-lg">Use Phone Camera</h3>
                     <Button variant="ghost" size="icon" onClick={onClose}>
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
 
-                <div className="text-center space-y-4">
-                    <div className="bg-muted p-8 rounded-lg">
-                        <QrCode className="h-32 w-32 mx-auto text-muted-foreground" />
-                    </div>
+                <div className="flex flex-col items-center gap-6">
+                    {isLoading ? (
+                        <div className="h-48 w-48 flex items-center justify-center bg-muted rounded-lg">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : error ? (
+                        <div className="h-48 w-48 flex items-center justify-center bg-destructive/10 rounded-lg text-destructive text-center p-4">
+                            <p>{error}</p>
+                        </div>
+                    ) : (
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                            {uploadUrl && (
+                                <QRCode
+                                    value={uploadUrl}
+                                    size={192}
+                                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                    viewBox={`0 0 256 256`}
+                                />
+                            )}
+                        </div>
+                    )}
 
-                    <div className="space-y-2">
-                        <p className="font-medium">Coming Soon!</p>
+                    <div className="text-center space-y-2">
+                        <p className="font-medium">Scan with your phone</p>
                         <p className="text-sm text-muted-foreground">
-                            QR-based phone camera sync is in development.<br />
-                            For now, please take a photo with your phone and upload it.
+                            Take a photo of your handwriting to instantly upload it here.
                         </p>
                     </div>
                 </div>
-
-                <Button variant="outline" className="w-full" onClick={onClose}>
-                    Close
-                </Button>
             </Card>
         </div>
     );
