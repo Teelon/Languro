@@ -38,7 +38,11 @@ export function WritingInput({ mode, onSubmit, isLoading, targetLanguage }: Writ
         }
     };
 
-    const handleCapture = (file: File) => {
+    const handleCapture = (file: File | null) => {
+        if (!file) {
+            setImageFile(null);
+            return;
+        }
         // Start cropping flow
         const url = URL.createObjectURL(file);
         setTempImageSrc(url);
