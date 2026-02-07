@@ -126,9 +126,11 @@ Rules:
 
         try {
             const parsed = JSON.parse(responseText);
+            const corrections = this.validateCorrections(text, parsed.corrections || []);
+
             return {
                 correctedText: parsed.correctedText || text,
-                corrections: parsed.corrections || [],
+                corrections,
                 overallFeedback: parsed.overallFeedback || { target: '', native: '' },
                 score: parsed.score ?? 100
             };
@@ -145,6 +147,66 @@ Rules:
                 score: 0
             };
         }
+    }
+
+    /**
+     * Validate and fix correction indices
+     * AI sometimes gets indices wrong or off by a few characters
+     */
+    private validateCorrections(text: string, corrections: Correction[]): Correction[] {
+        return corrections.map(c => {
+            // 1. Check if the provided indices are exact
+            const actualSubstring = text.slice(c.startIndex, c.endIndex);
+            if (actualSubstring === c.original) {
+                return c;
+            }
+
+            // 2. If not, try to find the text near the provided index
+            // Check +/- 10 characters first
+            const searchStart = Math.max(0, c.startIndex - 10);
+            const searchEnd = Math.min(text.length, c.endIndex + 10);
+            const nearText = text.slice(searchStart, searchEnd);
+            const nearIndex = nearText.indexOf(c.original);
+
+            if (nearIndex !== -1) {
+                return {
+                    ...c,
+                    startIndex: searchStart + nearIndex,
+                    endIndex: searchStart + nearIndex + c.original.length
+                };
+            }
+
+            // 3. Fallback: Find first occurrence in the whole text (risky if repeated, but better than broken)
+            const globalIndex = text.indexOf(c.original);
+            if (globalIndex !== -1) {
+                return {
+                    ...c,
+                    startIndex: globalIndex,
+                    endIndex: globalIndex + c.original.length
+                };
+            }
+
+            // 4. If exact match fails, try case-insensitive search
+            const lowerText = text.toLowerCase();
+            const lowerOriginal = c.original.toLowerCase();
+            const lowerIndex = lowerText.indexOf(lowerOriginal);
+
+            if (lowerIndex !== -1) {
+                return {
+                    ...c,
+                    startIndex: lowerIndex,
+                    endIndex: lowerIndex + c.original.length
+                };
+            }
+
+            // 5. If we really can't find it, mark it as invalid (indices -1)
+            // The frontend should filter these out or handle them gracefully
+            return {
+                ...c,
+                startIndex: -1,
+                endIndex: -1
+            };
+        }).filter(c => c.startIndex !== -1).sort((a, b) => a.startIndex - b.startIndex);
     }
 
     /**
