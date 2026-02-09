@@ -83,6 +83,19 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
+    redirect: async ({ url, baseUrl }) => {
+      // After sign-in, redirect to dashboard
+      // If the url is relative (starts with /), use it directly
+      if (url.startsWith("/")) {
+        return `${baseUrl}/dashboard`;
+      }
+      // If the url is on the same site, allow it
+      else if (new URL(url).origin === baseUrl) {
+        return url;
+      }
+      // Default to dashboard
+      return `${baseUrl}/dashboard`;
+    },
     jwt: async ({ token, user, trigger, session }) => {
       if (trigger === "update" && session) {
         return { ...token, ...session.user };
