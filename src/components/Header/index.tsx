@@ -205,6 +205,13 @@ const Header = () => {
                         <p className="mb-2 text-base font-medium text-slate-900 dark:text-white">
                           {session?.user?.name}
                         </p>
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setNavbarOpen(false)}
+                          className="flex py-2 text-base font-medium text-slate-900 hover:text-primary dark:text-white dark:hover:text-primary"
+                        >
+                          Dashboard
+                        </Link>
                         <Button
                           onClick={() => signOut()}
                           variant="ghost"
@@ -267,6 +274,13 @@ const Header = () => {
                     >
                       {session?.user?.name}
                     </p>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      className="text-base font-medium hover:opacity-70 mr-2"
+                    >
+                      <Link href="/dashboard">Dashboard</Link>
+                    </Button>
                     <Button
                       onClick={() => signOut()}
                       variant="ghost"

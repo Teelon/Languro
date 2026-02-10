@@ -7,6 +7,8 @@ export async function proxy(req: NextRequest) {
   const isAuth = !!token;
   const { pathname } = req.nextUrl;
 
+  console.log(`Proxy Debug: Path=${pathname}, Auth=${isAuth}, Token=${token ? 'Present' : 'Missing'}`);
+
   const isAuthPage =
     pathname === "/signin" ||
     pathname === "/signup" ||

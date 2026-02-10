@@ -84,6 +84,7 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     redirect: async ({ url, baseUrl }) => {
+      console.log(`Auth Redirect Debug: URL=${url}, BaseURL=${baseUrl}`);
       // After sign-in, redirect to dashboard
       // If the url is relative (starts with /), use it directly
       if (url.startsWith("/")) {

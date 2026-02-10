@@ -19,7 +19,7 @@ export default function ConjugatorPageContent({ className, fluid = false }: Conj
 
   return (
     <div className={cn(
-      "mx-auto px-4 pt-8 pb-12 min-h-[calc(100vh-100px)]",
+      "mx-auto px-4 pt-28 pb-12 min-h-[calc(100vh-100px)]",
       !fluid && "container max-w-7xl",
       className
     )}>
